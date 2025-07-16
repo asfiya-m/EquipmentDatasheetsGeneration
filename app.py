@@ -18,9 +18,12 @@ Created: June 2025
 import streamlit as st
 from io import BytesIO
 from datetime import datetime
+import pandas as pd
 
 # Backend code
 from automation_test1 import generate_master_datasheet
+from populate_equipment_names import populate_equipment_names
+
 # from populate_syscad_inputs_rev1 import populate_syscad_inputs
 
 st.title("📄 Master Equipment Datasheet Automation Tool")
@@ -28,8 +31,7 @@ st.title("📄 Master Equipment Datasheet Automation Tool")
 st.markdown("""
 This tool helps you:
 1. Generate a clean, categorized master datasheet from the Excel datasheets workbook.
-2. Populate the master sheet with SysCAD streamtable data.
-
+2. Populate Equipment names
 """)
 
 # ------------------------
@@ -63,50 +65,50 @@ if uploaded_raw and st.button("Generate Master Sheet"):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+    
 # ------------------------
-# Step 2: Populate with SysCAD Streamtable
+# Step 2: Populate Equipment Names
 # ------------------------
-# st.header("Step 2: Populate with SysCAD Inputs")
-# st.markdown("""
-# **What happens in this step?**
-# - Reads your generated master sheet (from Step 1 or manual upload).
-# - Compares equipment sheets with those in the SysCAD streamtable.
-# - Populates matching parameters in the **SysCAD Inputs** category.
-# - Rounds values to two decimals.
-# - Replaces the Master datasheet units with the ones from the streamtable if they differ.
-# """)
+st.header("Step 2: Populate Equipment Names")
+st.markdown("""
+**What happens in this step?**
+- Reads equipment names from your detailed streamtable.
+- Looks for sheets in the master datasheet where the sheet name is a substring of the equipment name.
+- Writes equipment names into the first available column starting at **D3**.
+""")
 
-# uploaded_master = st.file_uploader("Upload the master sheet (optional)", type=["xlsx"], key="master")
-# uploaded_stream = st.file_uploader("Upload the SysCAD streamtable Excel", type=["xlsx"], key="stream")
+# Check if Step 1 was completed
+use_generated = False
+if "generated_master" in st.session_state:
+    use_generated = st.radio(
+        "Choose master sheet to populate:",
+        ["Use the one generated in Step 1", "Upload a different master sheet"]
+    ) == "Use the one generated in Step 1"
 
-# if st.button("Populate SysCAD Inputs"):
-#     master_bytes = (
-#         st.session_state.get("generated_master") or
-#         (BytesIO(uploaded_master.read()) if uploaded_master else None)
-#     )
-#     stream_bytes = BytesIO(uploaded_stream.read()) if uploaded_stream else None
+if use_generated:
+    master_bytes = st.session_state["generated_master"]
+else:
+    uploaded_master = st.file_uploader("Upload the master sheet", type=["xlsx"], key="master2")
+    if uploaded_master:
+        master_bytes = BytesIO(uploaded_master.read())
+    else:
+        master_bytes = None
 
-#     if master_bytes and stream_bytes:
-#         master_bytes.seek(0)
-#         stream_bytes.seek(0)
+uploaded_stream = st.file_uploader("Upload the detailed streamtable", type=["xlsx"], key="stream2")
 
-#         result, missing = populate_syscad_inputs(master_bytes, stream_bytes)
+if master_bytes and uploaded_stream and st.button("Populate Equipment Names"):
+    stream_bytes = BytesIO(uploaded_stream.read())
 
-#         if missing:
-#             st.warning(f"⚠️ Missing streamtable data for: {', '.join(missing)}")
+    result, filename, skipped = populate_equipment_names(master_bytes, stream_bytes)
 
-#         st.success("✅ SysCAD inputs successfully populated into the master sheet.")
+    if skipped:
+        st.warning(f"⚠️ Some equipment were not matched to any sheet:\n{', '.join(skipped)}")
 
-#         result.seek(0)
-#         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-#         category_name = "SysCAD"
-#         populated_filename = f"Master_DataSheet_{category_name}Populated_{timestamp}.xlsx"
+    st.success("✅ Equipment names populated successfully.")
 
-#         st.download_button(
-#             label="📥 Download Populated Master Sheet",
-#             data=result,
-#             file_name=populated_filename,
-#             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-#         )
-#     else:
-#         st.error("Please either generate or upload a master sheet, and upload a streamtable file.")
+    st.download_button(
+        label="📥 Download Populated Master Sheet",
+        data=result,
+        file_name=filename,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )

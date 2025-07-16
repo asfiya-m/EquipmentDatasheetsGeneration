@@ -72,7 +72,7 @@ def generate_master_datasheet(uploaded_file):
         right= Side(style="thin"),
         top = Side(style = 'thin'),
         bottom= Side(style = 'thin')
-    )   
+    )
 
     # Load the Excel file
     xls = pd.ExcelFile(uploaded_file)
@@ -88,7 +88,7 @@ def generate_master_datasheet(uploaded_file):
         # Skip sheets without valid category data (column I)
         if df.shape[1] < 9 or df.iloc[:, 8].dropna().empty:
             continue
-    
+
         # Extract parameter name (Column C), units (Column E), category (Column I)
         records = []
         for _, row in df.iterrows():
@@ -117,7 +117,7 @@ def generate_master_datasheet(uploaded_file):
         ws.append(["Number of units ="])
         header_row = ["Parameter Category", "Input Parameters", "Units"]
         ws.append(header_row)
-    
+
         # Bold row 3
         for cell in ws[3]:
             if cell.value is not None:
@@ -159,7 +159,7 @@ def generate_master_datasheet(uploaded_file):
                 column_widths[2] = max(column_widths[2], len(str(param)))
                 column_widths[3] = max(column_widths[3], len(str(unit)))
                 current_row += 1
-            
+
             end_row = current_row - 1
             if end_row > start_row:
                 ws.merge_cells(start_row=start_row, start_column=1, end_row=end_row, end_column=1)
