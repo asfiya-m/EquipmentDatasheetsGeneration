@@ -1,3 +1,4 @@
+# EquipmentDatasheetsGeneration
 # datasheet_automation
 This script automates the creation of the Master Equipment datasheet file and populates the sheet with the SysCAD inputs
 
@@ -5,7 +6,6 @@ This script automates the creation of the Master Equipment datasheet file and po
 
 This Streamlit web app allows internal users to generate a master equipment data sheet by uploading a standardized Excel workbook (`Datasheets.xlsm`). The app automatically processes and formats the data across equipment sheets and provides a timestamped Excel file ready for download.
 
----
 
 ## 🚀 Features
 
@@ -22,5 +22,3 @@ This Streamlit web app allows internal users to generate a master equipment data
 - ✅ Applies clean border formatting to all data cells
 - ✅ Generates output with date+time stamped filename
 - ✅ Downloadable output file from the UI
-
----
