@@ -12,3 +12,10 @@ venv/
 # Optional: ignore IDE files
 .vscode/
 .idea/
+
+
+# Ignore Excel and other outputs
+*.xlsx
+*.xlsm
+*.csv
+*.log
