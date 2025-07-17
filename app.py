@@ -15,9 +15,10 @@ Created: June 2025
 
 """
 from io import BytesIO
+# from datetime import datetime
 import pandas as pd
 import streamlit as st
-from datetime import datetime
+
 
 from automation_test1 import generate_master_datasheet
 from populate_equipment_names import populate_equipment_names
@@ -69,10 +70,20 @@ if uploaded_raw and st.button("Generate Master Sheet"):
 st.header("Step 2: Populate Equipment Names")
 st.markdown("""
 **What happens in this step?**
-- Reads equipment names from your detailed streamtable.
-- Looks for sheets in the master datasheet where the sheet name is a substring of the equipment name.
-- Writes equipment names into the first available column starting at **D3**.
+- Reads equipment names from the SysCAD report - Detailed Streamtable, Equipment & Stream List sheet.
+- Maps equipment codes explicitly:
+    - `TK` → Tank
+    - `FP_PK` → Filter Press
+    - `IX_PK` → Ion Exchange
+    - `RO_PK` → Reverse Osmosis System
+- Automatically generated *implied equipment* where applicable
+    - For each Tank, an Agitator is added in the respective sheet.
+- Writes equipment names into the first available column starting at **D3** in the corresponding sheet.
+    - Equipment names without numeric part in the name tag are skipped.
+- Counts the number of units in each sheet and writes it in *B2*
+- Logs skipped equipment if no mapping sheet is found
 """)
+# checking if step 1 was completed
 
 use_generated_step2 = False
 if "generated_master" in st.session_state:
@@ -83,39 +94,51 @@ if "generated_master" in st.session_state:
     ) == "Use the one generated in Step 1"
 
 if use_generated_step2:
-    master_bytes = st.session_state["generated_master"]
+    master_bytes_step2 = st.session_state["generated_master"]
 else:
-    uploaded_master = st.file_uploader("Upload the master sheet", type=["xlsx"], key="master2")
-    if uploaded_master:
-        master_bytes = BytesIO(uploaded_master.read())
+    uploaded_master_step2 = st.file_uploader("Upload the master sheet", type=["xlsx"], key="master2")
+    if uploaded_master_step2:
+        master_bytes_step2 = BytesIO(uploaded_master_step2.read())
     else:
-        master_bytes = None
+        master_bytes_step2 = None
 
-uploaded_stream = st.file_uploader("Upload the detailed streamtable", type=["xlsx"], key="stream2")
+uploaded_stream_step2 = st.file_uploader("Upload the detailed streamtable", type=["xlsx"], key="stream2")
 
-if master_bytes and uploaded_stream and st.button("Populate Equipment Names"):
-    stream_content = uploaded_stream.read()  # read bytes here
-    stream_bytes = BytesIO(stream_content)
+if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipment Names"):
+    stream_bytes_step2 = BytesIO(uploaded_stream_step2.read())
 
-    result, filename, skipped = populate_equipment_names(master_bytes, stream_bytes)
+    # verbose=False for production
+    result_step2, filename_step2, skipped_step2 = populate_equipment_names(
+        master_bytes_step2, stream_bytes_step2, verbose=False
+    )
 
-    # Save outputs for Step 3
-    result.seek(0)
-    st.session_state["master_with_equipment"] = result
-    st.session_state["uploaded_stream_content"] = stream_content
+    if skipped_step2:
+        st.warning("⚠️ Some equipment were not matched or had issues:")
+        st.text_area("Skipped Items", "\n".join(skipped_step2), height=200)
 
-    if skipped:
-        st.warning(f"⚠️ Some equipment were not matched to any sheet:\n{', '.join(skipped)}")
+        # Optional: Download skipped as CSV
+        # import pandas as pd
+        skipped_df = pd.DataFrame(skipped_step2, columns=["Skipped"])
+        skipped_csv = skipped_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Download Skipped Items List",
+            data=skipped_csv,
+            file_name="skipped_equipment.csv",
+            mime="text/csv"
+        )
 
     st.success("✅ Equipment names populated successfully.")
 
+    # save to session state for step 3
+    st.session_state["master_with_equipment"] = result_step2
+    st.session_state["uploaded_stream_content"] = uploaded_stream_step2.getvalue()
+
     st.download_button(
         label="📥 Download Populated Master Sheet",
-        data=result,
-        file_name=filename,
+        data=result_step2,
+        file_name=filename_step2,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
 # ------------------------
 # Step 3: Populate Parameter values
 # ------------------------
