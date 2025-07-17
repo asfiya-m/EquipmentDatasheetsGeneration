@@ -14,7 +14,7 @@ This Streamlit web app allows internal users to generate a master equipment data
 ✅ Populate parameter values (Flow, Temperature, Density, etc.) into the master sheet by reading from `Stream Table V` and applying aggregation & unit conversions.  
 ✅ Optional verbose mode (backend-only) to debug & trace the computation step by step.  
 
----
+- - -
 
 ## 🚀 Steps
 
@@ -31,7 +31,14 @@ This Streamlit web app allows internal users to generate a master equipment data
 
 ### Step 2: Populate Equipment Names
 - Reads equipment names from your **detailed streamtable** (sheet: `Equipment & Stream List`).
-- Matches each equipment name to a sheet in the master datasheet (substring match).
+- Maps equipment codes explicitly:
+        TK → Tank
+        FP_PK → Filter Press
+        IX_PK → Ion Exchange
+        RO_PK → Reverse Osmosis System
+- Automatically generated implied equipment:
+        For each tank, an agitator is added
+- Counts number of units and populates the master datasheet.
 - Writes equipment names into the first available column starting at **D3** in each sheet.
 - If some equipment names could not be matched to sheets, they will appear in the skipped list.
 
@@ -43,13 +50,24 @@ This Streamlit web app allows internal users to generate a master equipment data
   - Sum (e.g., Flow Rate)
   - Average (e.g., Temperature, Density)
   - Applies unit conversions (e.g., Density × 1000).
+- Supports:
+    - Tank parameters:
+          Flow Rate (sum)
+          Operating Temperature (avg)
+          Operating Density (avg ×1000)
+          Design Density (avg ×1000)
+    - Agitator parameters:
+          Flow Rate (sum)
+          Operating Temperature (avg)
+          Operating Density (avg ×1000)
+          Operating Pressure (avg ×100)
 - Writes results into the master sheet under the respective equipment columns.
 - If some streams/parameters cannot be matched, they appear in the skipped list.
 
----
+- - -
 
 ## 🐛 Debugging
-The `populate_parameters.py` function supports an optional `verbose` toggle.
+The `populate_parameters.py` and `populate_equipment_names.py` function supports an optional `verbose` toggle.
 
 When `verbose=True`:
 - Prints detailed logs to the terminal:
@@ -62,3 +80,9 @@ When `verbose=True`:
 When deploying or in production → set `verbose=False` in `app.py`:
 ```python
 result, filename, skipped = populate_parameters(master_bytes, stream_bytes, verbose=False)
+
+- - -
+
+📋 Known Potential Improvements
+✨ Add defensive checks for malformed equipment names in master sheet.
+✨ Move mapping definitions (codes & parameters) into a JSON/YAML config file for easier maintenance.
