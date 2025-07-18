@@ -97,6 +97,66 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                 "convert": lambda x: x * 100,
                 "stream": "outlet"
             }
+        },
+        "Filter Press": {
+            "Cake Blow Required- Air Requirement": {
+                "text": "N"
+            },
+            "Cake Wash Required- With What?- What Flow Rate?": {
+                "text": "N"
+            },
+            "Feed material": {
+                "stream_type": "input",
+                "stream_index": 0,
+                "use_stream_name": True
+            },
+            "Solids S.G.": {
+                "col_idx": 17,                # Column Q
+                "convert": lambda x: x / 1000,
+                "stream_type": "input",
+                "stream_index": 0
+            },
+            "Liquid SG": {
+                "col_idx": 18,                # Column R
+                "convert": lambda x: x / 1000,
+                "stream_type": "input",
+                "stream_index": 0
+            },
+            "Feed Solids Tonnage per Hour (Average)": {
+                "col_idx": 4,                 # Column D
+                "stream_type": "input",
+                "stream_index": 0
+            },
+            "Feed Solids": {
+                "col_idx": 12,                # Column L
+                "stream_type": "input",
+                "stream_index": 0
+            },
+            "Feed S.G. (t/m³)": {
+                "col_idx": 15,               # Column O
+                "stream_type": "input",
+                "stream_index": 0
+            },
+            "Cake Solids Tonnage": {
+                "col_idx": 6,                # Column F
+                "stream_type": "output",
+                "stream_index": 1
+            },
+            "Cake Moisture": {
+                "col_idx": 18,               # Column R
+                "stream_type": "output",
+                "stream_index": 1
+            },
+            "Wet Cake Bulk Density": {
+                "col_idx": 15,              # Column O
+                "stream_type": "output",
+                "stream_index": 1
+            },
+            "Filtrate Flow": {
+                "col_idx": 7,               # Column G
+                "stream_type": "output",
+                "stream_index": 0
+            }
         }
     }
 
@@ -116,10 +176,7 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
         ws = wb_master[sheet_name]
 
         if sheet_name not in param_mapping:
-            msg = f"[SKIP] Sheet '{sheet_name}': no param_mapping defined"
-            skipped.append(msg)
-            if verbose:
-                print(msg)
+            skipped.append(f"[SKIP] Sheet '{sheet_name}': no param_mapping defined")
             continue
 
         mapping = param_mapping[sheet_name]
@@ -141,77 +198,66 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                 streams_key = f"TK-{suffix}"
 
             if streams_key not in equip_stream_map:
-                msg = f"[SKIP] {equip_name}: no streams found for base '{streams_key}'"
-                if verbose: print(msg)
-                skipped.append(msg)
+                skipped.append(f"[SKIP] {equip_name}: no streams found for base '{streams_key}'")
                 continue
 
             if verbose:
                 print(f"\n✅ Equipment: {equip_name} → Sheet: {sheet_name} → Column: {equip_col}")
 
-            collected = {k: [] for k in mapping_lc}
-
-            for master_param, rule in mapping_lc.items():
-                stream_type = rule.get("stream", "outlet")
-
-                stream_tags = equip_stream_map[streams_key]["outputs"] if stream_type == "outlet" else equip_stream_map[streams_key]["inputs"]
-
-                if not stream_tags:
-                    msg = f"[SKIP] {equip_name}: no {stream_type} streams found"
-                    if verbose: print(msg)
-                    skipped.append(msg)
-                    continue
-
-                for stream_tag in stream_tags:
-                    tag_lc = stream_tag.lower()
-                    if tag_lc not in streamtable_lookup:
-                        msg = f"[SKIP] {equip_name}: stream '{stream_tag}' not found"
-                        if verbose: print(msg)
-                        skipped.append(msg)
-                        continue
-
-                    stream_row = streamtable_lookup[tag_lc]
-                    col_idx = rule["col_idx"]
-                    try:
-                        val = stream_row.iloc[col_idx - 1]
-                        if pd.notna(val):
-                            collected[master_param].append(float(val))
-                        if verbose:
-                            print(f" → Found {val} for {stream_type} stream {stream_tag}, param {master_param} (col {col_idx})")
-                    except Exception as e:
-                        msg = f"[SKIP] {equip_name}: failed reading {master_param} from stream '{stream_tag}': {e}"
-                        if verbose: print(msg)
-                        skipped.append(msg)
-
-            # Write aggregated values
             for row_cells in ws.iter_rows(min_row=4, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
                 param_name = str(row_cells[1].value).strip() if row_cells[1].value else ""
                 param_lc = param_name.lower()
 
-                if param_lc in mapping_lc:
-                    rule = mapping_lc[param_lc]
-                    vals = collected.get(param_lc, [])
-
-                    if not vals:
-                        if verbose: print(f" → No values collected for {param_name}")
-                        ws.cell(row=row_cells[0].row, column=equip_col).value = None
-                        continue
-
-                    if rule["agg"] == "sum":
-                        result = np.nansum(vals)
-                    elif rule["agg"] == "avg":
-                        result = np.nanmean(vals)
-                    else:
-                        result = vals[0]
-
-                    if rule["convert"]:
-                        result = rule["convert"](result)
-
-                    if verbose:
-                        print(f" → Writing {round(result,2)} to cell ({row_cells[0].row},{equip_col}) for {param_name}")
-                    ws.cell(row=row_cells[0].row, column=equip_col).value = round(result, 2)
-                else:
+                if param_lc not in mapping_lc:
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                    continue
+
+                rule = mapping_lc[param_lc]
+
+                # text value
+                if "text" in rule:
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = rule["text"]
+                    if verbose:
+                        print(f" → Writing text '{rule['text']}' to {param_name}")
+                    continue
+
+                # use stream name
+                if rule.get("use_stream_name"):
+                    stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
+                    idx = rule.get("stream_index", 0)
+                    stream_name = stream_tags[idx] if idx < len(stream_tags) else ""
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = stream_name
+                    if verbose:
+                        print(f" → Writing stream name '{stream_name}' to {param_name}")
+                    continue
+
+                # numeric value
+                stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
+                idx = rule.get("stream_index", 0)
+                if idx >= len(stream_tags):
+                    skipped.append(f"[SKIP] {equip_name}: no stream at index {idx} for {param_name}")
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                    continue
+
+                stream_tag = stream_tags[idx].lower()
+                if stream_tag not in streamtable_lookup:
+                    skipped.append(f"[SKIP] {equip_name}: stream '{stream_tag}' not found for {param_name}")
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                    continue
+
+                stream_row = streamtable_lookup[stream_tag]
+                val = stream_row.iloc[rule["col_idx"] - 1]
+                if pd.isna(val):
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                    continue
+
+                result = float(val)
+                if rule.get("convert"):
+                    result = rule["convert"](result)
+
+                ws.cell(row=row_cells[0].row, column=equip_col).value = round(result, 2)
+                if verbose:
+                    print(f" → Writing {result} to {param_name}")
 
     output = BytesIO()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
