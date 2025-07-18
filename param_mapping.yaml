@@ -1,0 +1,91 @@
+Tank:
+  Flow Rate to/from Vessel:
+    col_idx: 7
+    agg: sum
+    convert: null
+    stream: outlet
+  Operating Temperature:
+    col_idx: 10
+    agg: avg
+    convert: null
+    stream: outlet
+  Operating Density:
+    col_idx: 15
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+  Design Density:
+    col_idx: 15
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+Agitator:
+  Flow Rate to/from Vessel:
+    col_idx: 7
+    agg: sum
+    convert: null
+    stream: outlet
+  Operating Temperature:
+    col_idx: 10
+    agg: avg
+    convert: null
+    stream: outlet
+  Operating Density:
+    col_idx: 15
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+  Operating Pressure:
+    col_idx: 11
+    agg: avg
+    convert: multiply_100
+    stream: outlet
+
+Filter Press:
+  Cake Blow Required- Air Requirement:
+    text: N
+  Cake Wash Required- With What?- What Flow Rate?:
+    text: N
+  Feed material:
+    stream_type: input
+    stream_index: 0
+    use_stream_name: true
+  Solids density:
+    col_idx: 16
+    stream_type: input
+    stream_index: 0
+  Liquid density:
+    col_idx: 17
+    stream_type: input
+    stream_index: 0
+  Feed Solids Tonnage per Hour (Average):
+    col_idx: 6
+    stream_type: input
+    stream_index: 0
+  Feed Solids:
+    col_idx: 12
+    stream_type: input
+    stream_index: 0
+  Feed density:
+    col_idx: 15
+    stream_type: input
+    stream_index: 0
+  Cake Solids Tonnage:
+    col_idx: 6
+    stream_type: output
+    stream_index: 1
+  Cake Moisture:
+    col_idx: 18
+    stream_type: output
+    stream_index: 1
+  # Wet Cake Bulk Density:
+  #   col_idx: 15
+  #   stream_type: output
+  #   stream_index: 1
+  Filtrate Flow:
+    col_idx: 7
+    stream_type: output
+    stream_index: 0
+
+# Ion Exchange: {}

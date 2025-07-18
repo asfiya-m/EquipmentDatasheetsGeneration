@@ -19,3 +19,12 @@ venv/
 *.xlsm
 *.csv
 *.log
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Streamlit logs & cache
+.streamlit/
+logs/
