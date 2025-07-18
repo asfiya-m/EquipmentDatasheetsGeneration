@@ -1,33 +1,30 @@
-"""
-populate_parameters.py
-
-Step 3: Populates parameter values into the master equipment datasheet
-based on stream data from the SysCAD streamtable.
-
-Handles both explicitly listed equipment and implied equipment (Agitator).
-Maps parameters by equipment type using hardcoded column mappings and aggregation rules.
-
-Workflow:
-1️⃣ Reads equipment names & stream tags from Equipment & Stream List sheet.
-2️⃣ For each equipment name in master file (including implied ones), finds corresponding input and output streams.
-3️⃣ For each stream, fetches parameter values from Stream Table V, controlled by `param_mapping`.
-4️⃣ Aggregates & converts values as per defined rules.
-5️⃣ Writes values back into the appropriate sheet & column in master sheet.
-
-Author: Asfiya Khanam
-Updated: July 2025
-"""
-
 from openpyxl import load_workbook
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
 import numpy as np
+import yaml
 
-def populate_parameters(master_file, streamtable_file, verbose=False):
+
+def apply_conversion(value, convert_key):
+    if convert_key == "multiply_1000":
+        return value * 1000
+    elif convert_key == "multiply_100":
+        return value * 100
+    elif convert_key == "divide_1000":
+        return value / 1000
+    elif convert_key is None:
+        return value
+    else:
+        raise ValueError(f"Unknown convert key: {convert_key}")
+
+
+def populate_parameters(master_file, streamtable_file, verbose=True):
     wb_master = load_workbook(master_file)
 
-    # Read both sheets from streamtable file
+    with open("param_mapping.yaml", "r") as f:
+        param_mapping = yaml.safe_load(f)
+
     df_streamlist = pd.read_excel(
         streamtable_file, sheet_name="Equipment & Stream List", header=None, engine="openpyxl"
     )
@@ -37,136 +34,18 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
 
     skipped = []
 
-    # Stream Table V lookup: stream tag → row
     streamtable_lookup = {}
     for idx, row in df_streamtable.iterrows():
         tag = str(row.iloc[0]).strip().lower()
         if tag:
             streamtable_lookup[tag] = row
 
-    # Parameter mapping & aggregation rules
-    param_mapping = {
-        "Tank": {
-            "Flow Rate to/from Vessel": {
-                "col_idx": 7,          # Column G
-                "agg": "sum",
-                "convert": None,
-                "stream": "outlet"
-            },
-            "Operating Temperature": {
-                "col_idx": 10,         # Column J
-                "agg": "avg",
-                "convert": None,
-                "stream": "outlet"
-            },
-            "Operating Density": {
-                "col_idx": 15,         # Column O
-                "agg": "avg",
-                "convert": lambda x: x * 1000,
-                "stream": "outlet"
-            },
-            "Design Density": {
-                "col_idx": 15,         # Column O
-                "agg": "avg",
-                "convert": lambda x: x * 1000,
-                "stream": "outlet"
-            }
-        },
-        "Agitator": {
-            "Flow Rate to/from Vessel": {
-                "col_idx": 7,          # Column G
-                "agg": "sum",
-                "convert": None,
-                "stream": "outlet"
-            },
-            "Operating Temperature": {
-                "col_idx": 10,         # Column J
-                "agg": "avg",
-                "convert": None,
-                "stream": "outlet"
-            },
-            "Operating Density": {
-                "col_idx": 15,         # Column O
-                "agg": "avg",
-                "convert": lambda x: x * 1000,
-                "stream": "outlet"
-            },
-            "Operating Pressure": {
-                "col_idx": 11,         # Column K
-                "agg": "avg",
-                "convert": lambda x: x * 100,
-                "stream": "outlet"
-            }
-        },
-        "Filter Press": {
-            "Cake Blow Required- Air Requirement": {
-                "text": "N"
-            },
-            "Cake Wash Required- With What?- What Flow Rate?": {
-                "text": "N"
-            },
-            "Feed material": {
-                "stream_type": "input",
-                "stream_index": 0,
-                "use_stream_name": True
-            },
-            "Solids S.G.": {
-                "col_idx": 17,                # Column Q
-                "convert": lambda x: x / 1000,
-                "stream_type": "input",
-                "stream_index": 0
-            },
-            "Liquid SG": {
-                "col_idx": 18,                # Column R
-                "convert": lambda x: x / 1000,
-                "stream_type": "input",
-                "stream_index": 0
-            },
-            "Feed Solids Tonnage per Hour (Average)": {
-                "col_idx": 4,                 # Column D
-                "stream_type": "input",
-                "stream_index": 0
-            },
-            "Feed Solids": {
-                "col_idx": 12,                # Column L
-                "stream_type": "input",
-                "stream_index": 0
-            },
-            "Feed S.G. (t/m³)": {
-                "col_idx": 15,               # Column O
-                "stream_type": "input",
-                "stream_index": 0
-            },
-            "Cake Solids Tonnage": {
-                "col_idx": 6,                # Column F
-                "stream_type": "output",
-                "stream_index": 1
-            },
-            "Cake Moisture": {
-                "col_idx": 18,               # Column R
-                "stream_type": "output",
-                "stream_index": 1
-            },
-            "Wet Cake Bulk Density": {
-                "col_idx": 15,              # Column O
-                "stream_type": "output",
-                "stream_index": 1
-            },
-            "Filtrate Flow": {
-                "col_idx": 7,               # Column G
-                "stream_type": "output",
-                "stream_index": 0
-            }
-        }
-    }
-
-    # Preprocess Equipment & Stream List into dict
     equip_stream_map = {}
-    equipment_rows = df_streamlist.iloc[3:]  # from row 4
+    equipment_rows = df_streamlist.iloc[3:]
     for _, row in equipment_rows.iterrows():
         equip_name = str(row[0]).strip()
-        outputs = [str(tag).strip() for tag in row[1:6] if pd.notna(tag)]  # B–F
-        inputs  = [str(tag).strip() for tag in row[6:13] if pd.notna(tag)] # G–M
+        outputs = [str(tag).strip() for tag in row[1:6] if pd.notna(tag)]
+        inputs = [str(tag).strip() for tag in row[6:13] if pd.notna(tag)]
         equip_stream_map[equip_name] = {
             "outputs": outputs,
             "inputs": inputs
@@ -214,46 +93,55 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
 
                 rule = mapping_lc[param_lc]
 
-                # text value
                 if "text" in rule:
                     ws.cell(row=row_cells[0].row, column=equip_col).value = rule["text"]
                     if verbose:
                         print(f" → Writing text '{rule['text']}' to {param_name}")
                     continue
 
-                # use stream name
                 if rule.get("use_stream_name"):
                     stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
                     idx = rule.get("stream_index", 0)
-                    stream_name = stream_tags[idx] if idx < len(stream_tags) else ""
+                    if idx >= len(stream_tags):
+                        msg = f"[SKIP] {equip_name}: no stream at index {idx} for {param_name} (stream name)"
+                        skipped.append(msg)
+                        if verbose: print(msg)
+                        ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                        continue
+                    stream_name = stream_tags[idx]
                     ws.cell(row=row_cells[0].row, column=equip_col).value = stream_name
                     if verbose:
                         print(f" → Writing stream name '{stream_name}' to {param_name}")
                     continue
 
-                # numeric value
                 stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
                 idx = rule.get("stream_index", 0)
                 if idx >= len(stream_tags):
-                    skipped.append(f"[SKIP] {equip_name}: no stream at index {idx} for {param_name}")
+                    msg = f"[SKIP] {equip_name}: no stream at index {idx} for {param_name}"
+                    skipped.append(msg)
+                    if verbose: print(msg)
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
                 stream_tag = stream_tags[idx].lower()
                 if stream_tag not in streamtable_lookup:
-                    skipped.append(f"[SKIP] {equip_name}: stream '{stream_tag}' not found for {param_name}")
+                    msg = f"[SKIP] {equip_name}: stream '{stream_tag}' not found for {param_name}"
+                    skipped.append(msg)
+                    if verbose: print(msg)
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
                 stream_row = streamtable_lookup[stream_tag]
                 val = stream_row.iloc[rule["col_idx"] - 1]
                 if pd.isna(val):
+                    msg = f"[SKIP] {equip_name}: value is NaN for {param_name} in stream '{stream_tag}' at col {rule['col_idx']}"
+                    skipped.append(msg)
+                    if verbose: print(msg)
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
                 result = float(val)
-                if rule.get("convert"):
-                    result = rule["convert"](result)
+                result = apply_conversion(result, rule.get("convert"))
 
                 ws.cell(row=row_cells[0].row, column=equip_col).value = round(result, 2)
                 if verbose:

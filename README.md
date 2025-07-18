@@ -1,88 +1,159 @@
-# EquipmentDatasheetsGeneration
+🚀 EquipmentDatasheetsGeneration
+This project automates the creation and population of a Master Equipment Datasheet from your SysCAD model outputs and standardized datasheet templates.
+It is designed as an internal Streamlit web app to make equipment documentation fast, consistent, and reliable.
 
-This script automates the creation of the Master Equipment datasheet file and populates the sheet with the SysCAD inputs
+📊 What does it do?
+✅ Generates a clean, categorized master equipment datasheet from your .xlsm workbook.
+✅ Populates equipment names and number of units into the master sheet based on SysCAD outputs.
+✅ Populates parameter values into the master sheet by reading from Stream Table V, applying aggregation rules & unit conversions.
+✅ Uses an external YAML configuration file (param_mapping.yaml) for easy, flexible mapping of parameters → no hardcoding!
 
-# 📊 Master Equipment Sheet Generator
+📝 Features
+✨ Generate a ready-to-use, properly formatted Master Equipment Datasheet with grouped categories:
 
-This Streamlit web app allows internal users to generate a master equipment data sheet by uploading a standardized Excel workbook (`Datasheets.xlsm`). The app automatically processes and formats the data across equipment sheets and provides a timestamped Excel file ready for download.
+SysCAD Inputs
 
+Engineering Inputs
 
-## 📋 Features
+Lab/Pilot Inputs
 
-✅ Generate a clean, categorized master datasheet from your Excel `.xlsm` file.  
-✅ Populate equipment names into the master sheet by matching against the detailed streamtable.  
-✅ Populate parameter values (Flow, Temperature, Density, etc.) into the master sheet by reading from `Stream Table V` and applying aggregation & unit conversions.  
-✅ Optional verbose mode (backend-only) to debug & trace the computation step by step.  
+Project Constants
 
-- - -
+Vendor Inputs
 
-## 🚀 Steps
+✨ Match and insert equipment names into the correct sheets & columns, counting the number of units.
+✨ Populate parameter values like Flow, Temperature, Density, Pressure, etc., with rules:
 
-### Step 1: Generate Master Datasheet
-- Upload a raw `.xlsm` file with equipment-specific sheets.
-- Extracts parameters from each sheet and groups them under 5 categories:
-  - SysCAD Inputs
-  - Engineering Inputs
-  - Lab/Pilot Inputs
-  - Project Constants
-  - Vendor Inputs
-- Creates one formatted sheet per equipment with placeholders for data entry.
-- Output: `Master_DataSheet_<timestamp>.xlsx`
+sum / average
 
-### Step 2: Populate Equipment Names
-- Reads equipment names from your **detailed streamtable** (sheet: `Equipment & Stream List`).
-- Maps equipment codes explicitly:
-        TK → Tank
-        FP_PK → Filter Press
-        IX_PK → Ion Exchange
-        RO_PK → Reverse Osmosis System
-- Automatically generated implied equipment:
-        For each tank, an agitator is added
-- Counts number of units and populates the master datasheet.
-- Writes equipment names into the first available column starting at **D3** in each sheet.
-- If some equipment names could not be matched to sheets, they will appear in the skipped list.
+unit conversions (×1000, ÷1000, etc.)
+✨ YAML-driven parameter mapping — easy to update & maintain.
 
-### Step 3: Populate Parameters
-- Reads the populated master sheet (from Step 2) and the same detailed streamtable.
-- Looks up streams for each equipment in `Equipment & Stream List`.
-- Finds corresponding values for each stream in `Stream Table V`.
-- Aggregates values as per rules:
-  - Sum (e.g., Flow Rate)
-  - Average (e.g., Temperature, Density)
-  - Applies unit conversions (e.g., Density × 1000).
-- Supports:
-    - Tank parameters:
-          Flow Rate (sum)
-          Operating Temperature (avg)
-          Operating Density (avg ×1000)
-          Design Density (avg ×1000)
-    - Agitator parameters:
-          Flow Rate (sum)
-          Operating Temperature (avg)
-          Operating Density (avg ×1000)
-          Operating Pressure (avg ×100)
-- Writes results into the master sheet under the respective equipment columns.
-- If some streams/parameters cannot be matched, they appear in the skipped list.
+✨ Optional verbose mode (backend-only) for detailed debugging.
 
-- - -
+🚀 Workflow Steps
+📄 Step 1: Generate Master Datasheet
+Upload a .xlsm workbook with equipment sheets.
 
-## 🐛 Debugging
-The `populate_parameters.py` and `populate_equipment_names.py` function supports an optional `verbose` toggle.
+App extracts parameters from each equipment sheet.
 
-When `verbose=True`:
-- Prints detailed logs to the terminal:
-  - which equipment & sheet matched
-  - which streams & parameters were found
-  - what values were read
-  - what values were written and where
-  - what was skipped
+Groups parameters under standard categories.
 
-When deploying or in production → set `verbose=False` in `app.py`:
-```python
-result, filename, skipped = populate_parameters(master_bytes, stream_bytes, verbose=False)
+Outputs one clean Excel file:
 
-- - -
+php-template
+Copy
+Edit
+Master_DataSheet_<timestamp>.xlsx
+🔷 Step 2: Populate Equipment Names
+Reads equipment tags from Equipment & Stream List (in your SysCAD detailed streamtable).
 
-📋 Known Potential Improvements
-✨ Add defensive checks for malformed equipment names in master sheet.
-✨ Move mapping definitions (codes & parameters) into a JSON/YAML config file for easier maintenance.
+Explicit mapping of codes:
+
+pgsql
+Copy
+Edit
+TK     → Tank
+A      → Agitator (implied for each Tank)
+FP_PK  → Filter Press
+IX_PK  → Ion Exchange
+RO_PK  → Reverse Osmosis System
+Fills equipment names in master sheet starting at D3.
+
+Adds number of units at B2.
+
+Logs skipped equipment (if no matching sheet found).
+
+📈 Step 3: Populate Parameters
+Reads the master sheet (with equipment names) + the SysCAD streamtable.
+
+Uses param_mapping.yaml for defining:
+
+which parameters to populate
+
+which streams to use (input/output)
+
+which column in Stream Table V to read from
+
+how to aggregate & convert
+
+Supports:
+
+Tank
+
+Agitator
+
+Filter Press
+
+(Ion Exchange placeholder ready)
+
+Writes values directly into the master sheet.
+
+Logs skipped parameters & streams with clear messages when verbose=True.
+
+🧾 Configuration
+🔷 param_mapping.yaml
+Defines all parameter mappings for each equipment type.
+
+Example:
+
+yaml
+Copy
+Edit
+Tank:
+  Operating Density:
+    col_idx: 15
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+Filter Press:
+  Feed material:
+    stream_type: input
+    stream_index: 0
+    use_stream_name: true
+  Solids density:
+    col_idx: 16
+    stream_type: input
+    stream_index: 0
+You can easily extend it with more parameters or equipment.
+
+🐛 Debugging
+✅ Run populate_parameters.py or populate_equipment_names.py with verbose=True for detailed logs:
+
+python
+Copy
+Edit
+result, filename, skipped = populate_parameters(master_bytes, stream_bytes, verbose=True)
+Logs include:
+
+which sheet & equipment matched
+
+which streams were used
+
+which parameter values were found & written
+
+skipped items with clear reasons
+
+In production → keep verbose=False.
+
+📋 Potential Future Improvements
+✨ Defensive checks for malformed equipment names.
+✨ Automatic detection of YAML inconsistencies & validation.
+✨ Build UI toggle for verbose mode.
+✨ Add YAML mappings for Ion Exchange & Reverse Osmosis System.
+
+📂 Files
+app.py — Streamlit app frontend.
+
+automation_test1.py — Step 1: generate master sheet.
+
+populate_equipment_names.py — Step 2: populate equipment names & unit counts.
+
+populate_parameters.py — Step 3: populate parameter values.
+
+param_mapping.yaml — YAML file with all mappings.
+
+requirements.txt — Python dependencies.
+
+.gitignore — Ignore cache & unnecessary files.
