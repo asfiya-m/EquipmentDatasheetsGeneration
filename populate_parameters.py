@@ -70,12 +70,6 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                 "agg": "avg",
                 "convert": lambda x: x * 1000,
                 "stream": "outlet"
-            },
-            "Solution Contents": {
-                "col_idx": 2,          # Column B
-                "agg": "first",
-                "convert": None,
-                "stream": "outlet"
             }
         },
         "Agitator": {
@@ -118,7 +112,6 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
             "inputs": inputs
         }
 
-    # Iterate over all sheets & equipment names in master
     for sheet_name in wb_master.sheetnames:
         ws = wb_master[sheet_name]
 
@@ -181,14 +174,8 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                     col_idx = rule["col_idx"]
                     try:
                         val = stream_row.iloc[col_idx - 1]
-                        if rule["agg"] == "first":
-                            if pd.notna(val) and not collected[master_param]:
-                                collected[master_param].append(str(val))
-                            continue
-
                         if pd.notna(val):
                             collected[master_param].append(float(val))
-
                         if verbose:
                             print(f" → Found {val} for {stream_type} stream {stream_tag}, param {master_param} (col {col_idx})")
                     except Exception as e:
@@ -210,21 +197,19 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                         ws.cell(row=row_cells[0].row, column=equip_col).value = None
                         continue
 
-                    if rule["agg"] == "first":
-                        result = vals[0]
-                    elif rule["agg"] == "sum":
+                    if rule["agg"] == "sum":
                         result = np.nansum(vals)
                     elif rule["agg"] == "avg":
                         result = np.nanmean(vals)
                     else:
                         result = vals[0]
 
-                    if rule["convert"] and isinstance(result, (int, float)):
+                    if rule["convert"]:
                         result = rule["convert"](result)
 
                     if verbose:
-                        print(f" → Writing {result} to cell ({row_cells[0].row},{equip_col}) for {param_name}")
-                    ws.cell(row=row_cells[0].row, column=equip_col).value = result
+                        print(f" → Writing {round(result,2)} to cell ({row_cells[0].row},{equip_col}) for {param_name}")
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = round(result, 2)
                 else:
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
 
