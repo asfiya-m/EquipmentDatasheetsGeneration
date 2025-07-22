@@ -1,3 +1,4 @@
+# TANK
 Tank:
   Flow Rate to/from Vessel:
     col_idx: 7
@@ -20,6 +21,8 @@ Tank:
     convert: multiply_1000
     stream: outlet
 
+##########################################################################################################################################################################
+# AGITATOR
 Agitator:
   Flow Rate to/from Vessel:
     col_idx: 7
@@ -42,6 +45,8 @@ Agitator:
     convert: multiply_100
     stream: outlet
 
+#############################################################################################################################################################################
+# FILTER PRESS
 Filter Press:
   Cake Blow Required- Air Requirement:
     text: N
@@ -88,4 +93,585 @@ Filter Press:
     stream_type: output
     stream_index: 0
 
-# Ion Exchange: {}
+##################################################################################################################################################################################
+# ION EXCHANGE
+Ion Exchange:
+  Design:
+    text: N/A  # or some default value if needed
+
+  Feed Flow / Skid:
+    col_idx: 7           # G
+    stream_type: input
+    stream_index: 0
+
+  Total Feed Flow:
+    col_idx: 7           # G
+    stream_type: input
+    stream_index: 0
+
+  Feed Temperature:
+    col_idx: 10          # J
+    stream_type: input
+    stream_index: 0
+
+  Feed Water Quality: {}
+
+  Lithium (Li) - Feed:
+    col_idx: 30        # AD
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Boron (B) - Feed:
+    col_idx: 33        # AG
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Calcium (Ca) - Feed:
+    col_idx: 36        # AJ
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Magnesium (Mg) - Feed:
+    col_idx: 37        # AK
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Sodium (Na) - Feed:
+    col_idx: 31        # AE
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Potassium (K) - Feed:
+    col_idx: 35        # AI
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Barium (Ba) - Feed:
+    col_idx: 34        # AH
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Strontium (Sr) - Feed:
+    col_idx: 39        # AM
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Carbonate (CO3 -2) - Feed:
+    col_idx: 44        # AR
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Chloride (Cl) - Feed:
+    col_idx: 38        # AL
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Fluoride (F) - Feed:
+    col_idx: 40        # AN
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  TDS - Feed:
+    col_idx: 45        # AS
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  TSS - Feed:
+    col_idx: 46        # AT
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Total Organic Carbon (TOC) - Feed:
+    col_idx: 47        # AU
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Iron (Fe) - Feed:
+    col_idx: 32        # AF
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Manganese (Mn) - Feed:
+    col_idx: 42        # AP
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Aluminum (Al) - Feed:
+    col_idx: 43        # AQ
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+    # Add others here if/when you have the columns:
+    # Bicarbonate(HCO3 -) - Feed: null
+    # Sulfate(SO4 -2) - Feed: null
+    # Nitrate(NO3-) - Feed: null
+    # Reactive Silica(SiO2) - Feed: null
+    # pH - Feed: null
+    # Free Chlorine - Feed: null
+    # Carbon Dioxide - Feed: null
+    # Oil and Grease - Feed: null
+
+  Treated Water: {}
+
+  Lithium (Li) - Product:
+    col_idx: 30        # AD
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Boron (B) - Product:
+    col_idx: 33        # AG
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Calcium (Ca) - Product:
+    col_idx: 36        # AJ
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Magnesium (Mg) - Product:
+    col_idx: 37        # AK
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Sodium (Na) - Product:
+    col_idx: 31        # AE
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Potassium (K) - Product:
+    col_idx: 35        # AI
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Barium (Ba) - Product:
+    col_idx: 34        # AH
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Strontium (Sr) - Product:
+    col_idx: 39        # AM
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Carbonate (CO3 -2) - Product:
+    col_idx: 44        # AR
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Chloride (Cl) - Product:
+    col_idx: 38        # AL
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Fluoride (F) - Product:
+    col_idx: 40        # AN
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  TDS - Product:
+    col_idx: 45        # AS
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  TSS - Product:
+    col_idx: 46        # AT
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Total Organic Carbon (TOC) - Product:
+    col_idx: 47        # AU
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Iron (Fe) - Product:
+    col_idx: 32        # AF
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Manganese (Mn) - Product:
+    col_idx: 42        # AP
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Aluminum (Al) - Product:
+    col_idx: 43        # AQ
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  # Add others here if/when you have the columns:
+  # Bicarbonate(HCO3 -) - Product: null
+  # Sulfate(SO4 -2) - Product: null
+  # Nitrate(NO3-) - Product: null
+  # Reactive Silica(SiO2) - Product: null
+  # pH - Product: null
+  # Free Chlorine - Product: null
+  # Carbon Dioxide - Product: null
+  # Oil and Grease - Product: null
+
+###################################################################################################################################################
+# REVERSE OSMOSIS SYSTEM
+
+Reverse Osmosis System:
+  Feed/Flow/Skid:
+    col_idx: 7         # G
+    stream_type: input
+    stream_index: 0
+
+  Feed Temperature:
+    col_idx: 10        # J
+    stream_type: input
+    stream_index: 0
+
+  TDS - Feed:
+    col_idx: 45        # AS
+    stream_type: input
+    stream_index: 0
+
+  Lithium - Feed:
+    col_idx: 30        # AD
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Chlorides - Feed:
+    col_idx: 38        # AL
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Boron - Feed:
+    col_idx: 33        # AG
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Calcium - Feed:
+    col_idx: 36        # AJ
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Iron - Feed:
+    col_idx: 32        # AF
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Magnesium - Feed:
+    col_idx: 37        # AK
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Potassium - Feed:
+    col_idx: 35        # AI
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Sodium - Feed:
+    col_idx: 31        # AE
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Strontium - Feed:
+    col_idx: 39        # AM
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Barium - Feed:
+    col_idx: 34        # AH
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Manganese - Feed:
+    col_idx: 42        # AP
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Fluoride - Feed:
+    col_idx: 40        # AN
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+
+  Expected Retenate Water:
+  Lithium - Brine:
+    col_idx: 30      # AD
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Chlorides - Brine:
+    col_idx: 38      # AL
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Boron - Brine:
+    col_idx: 33      # AG
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Calcium - Brine:
+    col_idx: 36      # AJ
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Iron - Brine:
+    col_idx: 32      # AF
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Magnesium - Brine:
+    col_idx: 37      # AK
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Potassium - Brine:
+    col_idx: 35      # AI
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Sodium - Brine:
+    col_idx: 31      # AE
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Strontium - Brine:
+    col_idx: 39      # AM
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Barium - Brine:
+    col_idx: 34      # AH
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Manganese - Brine:
+    col_idx: 42      # AP
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  Fluoride - Brine:
+    col_idx: 40      # AN
+    stream_type: output
+    stream_index: 1
+    convert: multiply_1000
+
+  TDS - Brine:
+    col_idx: 45      # AS
+    stream_type: output
+    stream_index: 1
+
+  # Some columns are missing
+#######################################################################################################################################################################
+
+Clarifier:
+  Fluid Temperature - operating:
+    col_idx: 10        # J
+    stream_type: input
+    stream_index: 0
+
+  Fluid Temperature - design:
+    col_idx: 10        # J
+    stream_type: input
+    stream_index: 0
+
+  Solution Density:
+    col_idx: 15        # O
+    stream_type: input
+    stream_index: 0
+
+  Solids Density:
+    col_idx: 16        # P
+    stream_type: input
+    stream_index: 0
+
+  Slurry Density:
+    col_idx: 15        # O
+    stream_type: input
+    stream_index: 0
+
+  # Solution pH:
+  #   col_idx: null      #
+  #   stream_type: input
+  #   stream_index: 0
+
+  TDS:
+    col_idx: 55        # BB
+    stream_type: input
+    stream_index: 0
+
+  Average Feed Rate - operating (assuming 90% utilization):
+    col_idx: 7         # G
+    stream_type: input
+    stream_index: 0
+
+  Slurry U/F Volumetric Flowrate:
+    col_idx: 7         # G
+    stream_type: output
+    stream_index: 1
+
+  O/F solids concentration:
+    col_idx: 56        # BC
+    stream_type: output
+    stream_index: 0
+    convert: multiply_1000
+
+  O/F volumetric flowrate:
+    col_idx: 7         # G
+    stream_type: output
+    stream_index: 0
+
+
+#######################################################################################################################################################################
+
+Heat Exchanger-1:
+  Liquid Flow:
+    col_idx: 4        # D
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Vapour Flow:
+    col_idx: 4        # D
+    stream_type: input
+    stream_index: 1
+    convert: multiply_1000
+
+  Non-condensables (NC) Flow:
+    col_idx: 4        # D
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Liquid Inlet Temperature:
+    col_idx: 10       # J
+    stream_type: input
+    stream_index: 0
+
+  Liquid Outlet Temperature:
+    col_idx: 10       # J
+    stream_type: output
+    stream_index: 0
+
+  Vapour Inlet Temperature:
+    col_idx: 10       # J
+    stream_type: input
+    stream_index: 1
+
+  Condensate Temperature:
+    col_idx: 10       # J
+    stream_type: output
+    stream_index: 1
+
+  Heating fluid type:
+    text: Reagent/Brine
+
+  Cooling Fluid type:
+    text: Steam
+
+  Operating pressure:
+    col_idx: 11       # K
+    stream_type: input
+    stream_index: 0
+
+  Density of Liquid:
+    col_idx: 15       # O
+    stream_type: input
+    stream_index: 0
+    convert: multiply_1000
+
+  Density of Vapour and NC:
+    col_idx: 15       # O
+    stream_type: input
+    stream_index: 1
+    convert: multiply_1000
+
+  # Viscosity of Liquid:
+  #   col_idx: null     # column not specified — fill in if known
+  #   stream_type: input
+  #   stream_index: 0
+
+  # Viscosity of Vapour and NC:
+  #   col_idx: null     # column not specified — fill in if known
+  #   stream_type: input
+  #   stream_index: 1
+
+  Specific Heat of Liquid:
+    col_idx: 13       # M
+    stream_type: input
+    stream_index: 0
+
+  Specific Heat of Vapour and NC:
+    col_idx: 13       # M
+    stream_type: input
+    stream_index: 1
+
+  # Thermal Conductivity of Liquid:
+  #   col_idx: null     # column not specified — fill in if known
+  #   stream_type: input
+  #   stream_index: 0
+
+  # Thermal Conductivity of Vapour and NC:
+  #   col_idx: null     # column not specified — fill in if known
+  #   stream_type: input
+  #   stream_index: 1
+
+  # Liquid Surface Tension:
+  #   col_idx: null     # column not specified — fill in if known
+  #   stream_type: input
+  #   stream_index: 0
+
+#######################################################################################################################################################################
+
+# Heat Exchanger-1:

@@ -1,3 +1,22 @@
+"""
+populate_parameters.py
+
+Step 3: Populates parameter values into the master equipment datasheet
+based on stream data from the SysCAD streamtable.
+
+Handles both explicitly listed equipment and implied equipment (Agitator).
+Maps parameters by equipment type using hardcoded column mappings and aggregation rules.
+
+Workflow:
+1️⃣ Reads equipment names & stream tags from Equipment & Stream List sheet.
+2️⃣ For each equipment name in master file (including implied ones), finds corresponding input and output streams.
+3️⃣ For each stream, fetches parameter values from Stream Table V, controlled by `param_mapping`.
+4️⃣ Aggregates & converts values as per defined rules.
+5️⃣ Writes values back into the appropriate sheet & column in master sheet.
+
+Author: Asfiya Khanam
+Updated: July 2025
+"""
 from openpyxl import load_workbook
 import pandas as pd
 from io import BytesIO
@@ -19,7 +38,7 @@ def apply_conversion(value, convert_key):
         raise ValueError(f"Unknown convert key: {convert_key}")
 
 
-def populate_parameters(master_file, streamtable_file, verbose=True):
+def populate_parameters(master_file, streamtable_file, verbose=False):
     wb_master = load_workbook(master_file)
 
     with open("param_mapping.yaml", "r") as f:
@@ -91,7 +110,11 @@ def populate_parameters(master_file, streamtable_file, verbose=True):
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
-                rule = mapping_lc[param_lc]
+                rule = mapping_lc.get(param_lc)
+
+                if not rule:
+                    ws.cell(row=row_cells[0].row,column=equip_col).value = None
+                    continue
 
                 if "text" in rule:
                     ws.cell(row=row_cells[0].row, column=equip_col).value = rule["text"]
