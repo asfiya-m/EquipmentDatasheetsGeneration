@@ -37,7 +37,11 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
         "TK": "Tank",
         "FP_PK": "Filter Press",
         "IX_PK": "Ion Exchange",
-        "RO_PK": "Reverse Osmosis System"
+        "RO_PK": "Reverse Osmosis System",
+        "S": "Clarifier",
+        "E": "Heat Exchanger-1",
+        "SL": "Silo"
+
     }
 
     # implied mapping: for each TK → also create A in Agitator sheet
