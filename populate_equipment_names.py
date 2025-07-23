@@ -40,7 +40,7 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
         "RO_PK": "Reverse Osmosis System",
         "S": "Clarifier",
         "E": "Heat Exchanger-1",
-        "SL": "Silo"
+        "SL": "Silos"
 
     }
 
@@ -70,7 +70,9 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
 
         matched = False
         for code, sheet_name in equipment_sheet_map.items():
-            if equip_name.startswith(code):
+            equip_prefix = equip_name.split('-',1)[0]
+            if equip_prefix == code:
+            # if equip_name.startswith(code):
                 if sheet_name in wb_master.sheetnames:
                     ws = wb_master[sheet_name]
 

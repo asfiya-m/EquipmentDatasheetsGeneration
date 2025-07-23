@@ -1,27 +1,24 @@
 """
 populate_parameters.py
 
-Step 3: Populates parameter values into the master equipment datasheet
+Populates parameter values into the master equipment datasheet
 based on stream data from the SysCAD streamtable.
 
-Handles both explicitly listed equipment and implied equipment (Agitator).
-Maps parameters by equipment type using hardcoded column mappings and aggregation rules.
-
-Workflow:
-1️⃣ Reads equipment names & stream tags from Equipment & Stream List sheet.
-2️⃣ For each equipment name in master file (including implied ones), finds corresponding input and output streams.
-3️⃣ For each stream, fetches parameter values from Stream Table V, controlled by `param_mapping`.
-4️⃣ Aggregates & converts values as per defined rules.
-5️⃣ Writes values back into the appropriate sheet & column in master sheet.
+Handles:
+✅ Explicit & implied equipment
+✅ Parameters from Stream Table V
+✅ Parameters from Equipment & Stream List (per equipment)
+✅ Fallback logic if primary value missing
+✅ stream_tag_override (only for specific equipment if defined in YAML `overrides`)
 
 Author: Asfiya Khanam
 Updated: July 2025
 """
+
 from openpyxl import load_workbook
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
-import numpy as np
 import yaml
 
 
@@ -53,22 +50,21 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
 
     skipped = []
 
+    # Stream Table V → dict
     streamtable_lookup = {}
     for idx, row in df_streamtable.iterrows():
         tag = str(row.iloc[0]).strip().lower()
         if tag:
             streamtable_lookup[tag] = row
 
+    # Equipment & Stream List → map
     equip_stream_map = {}
     equipment_rows = df_streamlist.iloc[3:]
     for _, row in equipment_rows.iterrows():
         equip_name = str(row[0]).strip()
         outputs = [str(tag).strip() for tag in row[1:6] if pd.notna(tag)]
         inputs = [str(tag).strip() for tag in row[6:13] if pd.notna(tag)]
-        equip_stream_map[equip_name] = {
-            "outputs": outputs,
-            "inputs": inputs
-        }
+        equip_stream_map[equip_name] = {"outputs": outputs, "inputs": inputs}
 
     for sheet_name in wb_master.sheetnames:
         ws = wb_master[sheet_name]
@@ -111,20 +107,59 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                     continue
 
                 rule = mapping_lc.get(param_lc)
-
                 if not rule:
-                    ws.cell(row=row_cells[0].row,column=equip_col).value = None
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
-                if "text" in rule:
-                    ws.cell(row=row_cells[0].row, column=equip_col).value = rule["text"]
+                # 🔷 Resolve rule_to_use (default + optional override for this equipment)
+                rule_to_use = rule
+                if isinstance(rule, dict) and "default" in rule and "overrides" in rule:
+                    if equip_name in rule["overrides"]:
+                        rule_to_use = {**rule["default"], **rule["overrides"][equip_name]}
+                        if verbose:
+                            print(f" → Using override rule for {equip_name} → {param_name}")
+                    else:
+                        rule_to_use = rule["default"]
+
+                # 📄 Case 1: fixed text
+                if "text" in rule_to_use:
+                    ws.cell(row=row_cells[0].row, column=equip_col).value = rule_to_use["text"]
                     if verbose:
-                        print(f" → Writing text '{rule['text']}' to {param_name}")
+                        print(f" → Writing text '{rule_to_use['text']}' to {param_name}")
                     continue
 
-                if rule.get("use_stream_name"):
-                    stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
-                    idx = rule.get("stream_index", 0)
+                # 📄 Case 2: Equipment & Stream List per_equipment
+                if rule_to_use.get("sheet") == "Equipment & Stream List" and rule_to_use.get("per_equipment"):
+                    equip_row_match = None
+                    for _, row in equipment_rows.iterrows():
+                        if str(row[0]).strip().lower() == streams_key.lower():
+                            equip_row_match = row
+                            break
+
+                    val = None
+                    if equip_row_match is not None:
+                        val = equip_row_match[rule_to_use["col_idx"] - 1]
+
+                    if pd.notna(val):
+                        ws.cell(row=row_cells[0].row, column=equip_col).value = round(float(val), 2)
+                        if verbose:
+                            print(f" → Writing {val} to {param_name} (from Equipment & Stream List)")
+                        continue
+
+                    # 📄 fallback logic
+                    if not rule_to_use.get("fallback"):
+                        skipped.append(f"[SKIP] {equip_name}: {param_name} missing in Equipment & Stream List, no fallback")
+                        ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                        continue
+
+                    if verbose:
+                        print(f" → {param_name}: fallback to Stream Table V")
+                    rule_to_use = rule_to_use["fallback_rule"]
+
+                # 📄 Case 3: use_stream_name
+                if rule_to_use.get("use_stream_name"):
+                    stream_tags = equip_stream_map[streams_key][rule_to_use.get("stream_type", "output") + "s"]
+                    idx = rule_to_use.get("stream_index", 0)
                     if idx >= len(stream_tags):
                         msg = f"[SKIP] {equip_name}: no stream at index {idx} for {param_name} (stream name)"
                         skipped.append(msg)
@@ -137,16 +172,34 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                         print(f" → Writing stream name '{stream_name}' to {param_name}")
                     continue
 
-                stream_tags = equip_stream_map[streams_key][rule.get("stream_type", "output") + "s"]
-                idx = rule.get("stream_index", 0)
-                if idx >= len(stream_tags):
-                    msg = f"[SKIP] {equip_name}: no stream at index {idx} for {param_name}"
-                    skipped.append(msg)
-                    if verbose: print(msg)
-                    ws.cell(row=row_cells[0].row, column=equip_col).value = None
-                    continue
+                # 📄 Case 4: Stream Table V lookup
+                if "stream_tag_override" in rule_to_use:
+                    stream_tag = rule_to_use["stream_tag_override"].strip().lower()
+                    if verbose:
+                        print(f" → Using overridden stream tag '{stream_tag}' for {param_name}")
+                else:
+                    stream_key = rule_to_use.get("stream_type", "output") + "s"
+                    stream_tags = equip_stream_map.get(streams_key, {}).get(stream_key, [])
+                    idx = rule_to_use.get("stream_index", 0)
 
-                stream_tag = stream_tags[idx].lower()
+                    if not stream_tags:
+                        msg = f"[SKIP] {equip_name}: no streams found for {stream_key} for {param_name}"
+                        skipped.append(msg)
+                        if verbose: print(msg)
+                        ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                        continue
+
+                    if idx >= len(stream_tags):
+                        msg = f"[SKIP] {equip_name}: no stream at index {idx} for {param_name}"
+                        skipped.append(msg)
+                        if verbose: print(msg)
+                        ws.cell(row=row_cells[0].row, column=equip_col).value = None
+                        continue
+
+                    stream_tag = stream_tags[idx].strip().lower()
+                    if verbose:
+                        print(f" → Using normal stream tag '{stream_tag}' for {param_name}")
+
                 if stream_tag not in streamtable_lookup:
                     msg = f"[SKIP] {equip_name}: stream '{stream_tag}' not found for {param_name}"
                     skipped.append(msg)
@@ -155,20 +208,19 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
                     continue
 
                 stream_row = streamtable_lookup[stream_tag]
-                val = stream_row.iloc[rule["col_idx"] - 1]
+                val = stream_row.iloc[rule_to_use["col_idx"] - 1]
                 if pd.isna(val):
-                    msg = f"[SKIP] {equip_name}: value is NaN for {param_name} in stream '{stream_tag}' at col {rule['col_idx']}"
+                    msg = f"[SKIP] {equip_name}: NaN for {param_name} in stream '{stream_tag}' at col {rule_to_use['col_idx']}"
                     skipped.append(msg)
                     if verbose: print(msg)
                     ws.cell(row=row_cells[0].row, column=equip_col).value = None
                     continue
 
                 result = float(val)
-                result = apply_conversion(result, rule.get("convert"))
-
+                result = apply_conversion(result, rule_to_use.get("convert"))
                 ws.cell(row=row_cells[0].row, column=equip_col).value = round(result, 2)
                 if verbose:
-                    print(f" → Writing {result} to {param_name}")
+                    print(f" → Writing {result} to {param_name} (from Stream Table V)")
 
     output = BytesIO()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
