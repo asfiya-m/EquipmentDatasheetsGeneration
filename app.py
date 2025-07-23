@@ -1,36 +1,39 @@
 """
-
 app.py
 
 Streamlit frontend for automating the generation and population of a Master Equipment Datasheet.
 
 Steps:
-1. Upload a raw .xlsm file with multiple equipment sheets.
-2. Generate a categorized master datasheet with grouped input sections.
-3. Upload a SysCAD streamtable Excel file to populate SysCAD Inputs into the master datasheet.
-4. Download final Excel file with all populated data.
+1️⃣ Upload a raw .xlsm file with multiple equipment sheets.
+2️⃣ Generate a categorized master datasheet with grouped input sections.
+3️⃣ Upload a SysCAD streamtable Excel file to populate SysCAD Inputs into the master datasheet.
+4️⃣ Upload datasheets workbook to populate Engineering Inputs.
+5️⃣ Download final Excel file with all populated data.
 
 Author: Asfiya Khanam
-Created: June 2025
-
+Updated: July 2025
 """
+
 from io import BytesIO
-# from datetime import datetime
 import pandas as pd
 import streamlit as st
-
 
 from automation_test1 import generate_master_datasheet
 from populate_equipment_names import populate_equipment_names
 from populate_parameters import populate_parameters
+from populate_engineering_inputs import populate_engineering_inputs
 
 st.title("📄 Master Equipment Datasheet Automation Tool")
+
+st.sidebar.markdown("### Options")
+verbose = st.sidebar.checkbox("Verbose logging", False)
 
 st.markdown("""
 This tool helps you:
 1. Generate a clean, categorized master datasheet from the Excel datasheets workbook.
 2. Populate Equipment names.
 3. Populate SysCAD parameter values.
+4. Populate Engineering Inputs.
 """)
 
 # ------------------------
@@ -56,7 +59,6 @@ if uploaded_raw and st.button("Generate Master Sheet"):
     st.session_state["generated_master"] = output_stream
 
     st.success("✅ Master datasheet has been successfully generated!")
-
     st.download_button(
         label="📥 Download Master Sheet",
         data=output_stream,
@@ -76,14 +78,11 @@ st.markdown("""
     - `FP_PK` → Filter Press
     - `IX_PK` → Ion Exchange
     - `RO_PK` → Reverse Osmosis System
-- Automatically generated *implied equipment* where applicable
-    - For each Tank, an Agitator is added in the respective sheet.
-- Writes equipment names into the first available column starting at **D3** in the corresponding sheet.
-    - Equipment names without numeric part in the name tag are skipped.
-- Counts the number of units in each sheet and writes it in *B2*
-- Logs skipped equipment if no mapping sheet is found
+- Automatically generates implied equipment where applicable.
+- Writes equipment names into the first available column starting at **D3**.
+- Counts the number of units in each sheet and writes it in *B2*.
+- Logs skipped equipment if no mapping sheet is found.
 """)
-# checking if step 1 was completed
 
 use_generated_step2 = False
 if "generated_master" in st.session_state:
@@ -107,17 +106,14 @@ uploaded_stream_step2 = st.file_uploader("Upload the detailed streamtable", type
 if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipment Names"):
     stream_bytes_step2 = BytesIO(uploaded_stream_step2.read())
 
-    # verbose=False for production
     result_step2, filename_step2, skipped_step2 = populate_equipment_names(
-        master_bytes_step2, stream_bytes_step2, verbose=False
+        master_bytes_step2, stream_bytes_step2, verbose=verbose
     )
 
     if skipped_step2:
         st.warning("⚠️ Some equipment were not matched or had issues:")
         st.text_area("Skipped Items", "\n".join(skipped_step2), height=200)
 
-        # Optional: Download skipped as CSV
-        # import pandas as pd
         skipped_df = pd.DataFrame(skipped_step2, columns=["Skipped"])
         skipped_csv = skipped_df.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -128,8 +124,6 @@ if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipmen
         )
 
     st.success("✅ Equipment names populated successfully.")
-
-    # save to session state for step 3
     st.session_state["master_with_equipment"] = result_step2
     st.session_state["uploaded_stream_content"] = uploaded_stream_step2.getvalue()
 
@@ -139,8 +133,9 @@ if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipmen
         file_name=filename_step2,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 # ------------------------
-# Step 3: Populate Parameter values
+# Step 3: Populate Parameters
 # ------------------------
 st.header("Step 3: Populate Parameters")
 st.markdown("""
@@ -175,7 +170,7 @@ else:
     stream_bytes = None
 
 if master_bytes and stream_bytes and st.button("Populate Parameters"):
-    result, filename, skipped = populate_parameters(master_bytes, stream_bytes)
+    result, filename, skipped = populate_parameters(master_bytes, stream_bytes, verbose=verbose)
 
     if skipped:
         st.warning("⚠️ Some equipment or streams could not be populated.")
@@ -191,10 +186,63 @@ if master_bytes and stream_bytes and st.button("Populate Parameters"):
         )
 
     st.success("✅ Parameters populated successfully into master sheet.")
+    st.session_state["master_with_parameters"] = result
 
     st.download_button(
         label="📥 Download Populated Master Sheet",
         data=result,
         file_name=filename,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# ------------------------
+# Step 4: Populate Engineering Inputs
+# ------------------------
+st.header("Step 4: Populate Engineering Inputs")
+st.markdown("""
+**What happens in this step?**
+- Reads the parameters under **Engineering Inputs** in the master sheet.
+- Fetches the corresponding values from your datasheets workbook (col K).
+- Writes the values to all units in the master sheet.
+""")
+
+use_generated_step4 = False
+if "master_with_parameters" in st.session_state:
+    use_generated_step4 = st.radio(
+        "Choose master sheet to populate:",
+        ["Use the one generated in Step 3", "Upload a different master sheet"],
+        key="step4_radio"
+    ) == "Use the one generated in Step 3"
+
+if use_generated_step4:
+    master_bytes_step4 = st.session_state["master_with_parameters"]
+else:
+    uploaded_master_step4 = st.file_uploader("Upload the master sheet", type=["xlsx"], key="master4")
+    if uploaded_master_step4:
+        master_bytes_step4 = BytesIO(uploaded_master_step4.read())
+    else:
+        master_bytes_step4 = None
+
+# uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xlsx"], key="datasheets")
+uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
+
+
+if master_bytes_step4 and uploaded_datasheet and st.button("Populate Engineering Inputs"):
+    datasheet_bytes = BytesIO(uploaded_datasheet.read())
+
+    result_step4, filename_step4, skipped_step4 = populate_engineering_inputs(
+        master_bytes_step4, datasheet_bytes, verbose=verbose
+    )
+
+    if skipped_step4:
+        st.warning("⚠️ Some parameters could not be matched:")
+        st.text_area("Skipped Parameters", "\n".join(skipped_step4), height=200)
+
+    st.success("✅ Engineering Inputs populated successfully.")
+
+    st.download_button(
+        label="📥 Download Master Sheet with Engineering Inputs",
+        data=result_step4,
+        file_name=filename_step4,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
