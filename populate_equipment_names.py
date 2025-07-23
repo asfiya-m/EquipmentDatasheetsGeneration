@@ -35,12 +35,16 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
     # explicit mapping
     equipment_sheet_map = {
         "TK": "Tank",
+        "BP_TK": "Bolted Panel Tank",
+        "PF_TK": "PreFab Tank",
+        "P_TK": "Poly Tank",
         "FP_PK": "Filter Press",
         "IX_PK": "Ion Exchange",
         "RO_PK": "Reverse Osmosis System",
         "S": "Clarifier",
         "E": "Heat Exchanger-1",
-        "SL": "Silos"
+        "SL": "Silos",
+        "F" : "Media Filter"
 
     }
 

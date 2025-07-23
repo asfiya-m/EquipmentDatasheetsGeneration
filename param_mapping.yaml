@@ -1,4 +1,4 @@
-# TANK
+#TANK
 Tank:
   Flow Rate to/from Vessel:
     col_idx: 7          #G
@@ -34,15 +34,15 @@ Tank:
       stream_type: output
       stream_index: 0
 
-  Design Slurry pH:
-    sheet: "Equipment & Stream List"
-    col_idx: 14         #N
-    per_equipment: true
-    fallback: true
-    fallback_rule:
-      col_idx: 37        #AK
-      stream_type: output
-      stream_index: 0
+  # Design Slurry pH:
+  #   sheet: "Equipment & Stream List"
+  #   col_idx: 14         #N
+  #   per_equipment: true
+  #   fallback: true
+  #   fallback_rule:
+  #     col_idx: 37        #AK
+  #     stream_type: output
+  #     stream_index: 0
 
   TDS:
     col_idx: 34      #AH
@@ -56,6 +56,182 @@ Tank:
     convert: multiply_1000
     stream: outlet
 
+##########################################################################################################################################################################################
+# BOLTED PANEL TANK
+Bolted Panel Tank:
+  Flow Rate to/from Vessel:
+    col_idx: 7          #G
+    agg: sum
+    convert: null
+    stream: outlet
+
+  Operating Temperature:
+    col_idx: 10       #J
+    agg: avg
+    convert: null
+    stream: outlet
+
+  Operating Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Design Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Operating Slurry pH:
+    sheet: "Equipment & Stream List"
+    col_idx: 14         #N
+    per_equipment: true
+    fallback: true
+    fallback_rule:
+      col_idx: 37        # AK
+      stream_type: output
+      stream_index: 0
+
+  # Design Slurry pH:
+  #   sheet: "Equipment & Stream List"
+  #   col_idx: 14         #N
+  #   per_equipment: true
+  #   fallback: true
+  #   fallback_rule:
+  #     col_idx: 37        #AK
+  #     stream_type: output
+  #     stream_index: 0
+
+  TDS:
+    col_idx: 34      #AH
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
+
+  Chloride concentration:
+    col_idx: 27      # AA
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
+
+##########################################################################################################################################################################
+# PreFab TANK
+PreFab Tank:
+  Flow Rate to/from Vessel:
+    col_idx: 7          #G
+    agg: sum
+    convert: null
+    stream: outlet
+
+  Operating Temperature:
+    col_idx: 10       #J
+    agg: avg
+    convert: null
+    stream: outlet
+
+  Operating Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Design Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Operating Slurry pH:
+    sheet: "Equipment & Stream List"
+    col_idx: 14         #N
+    per_equipment: true
+    fallback: true
+    fallback_rule:
+      col_idx: 37        # AK
+      stream_type: output
+      stream_index: 0
+
+  # Design Slurry pH:
+  #   sheet: "Equipment & Stream List"
+  #   col_idx: 14         #N
+  #   per_equipment: true
+  #   fallback: true
+  #   fallback_rule:
+  #     col_idx: 37        #AK
+  #     stream_type: output
+  #     stream_index: 0
+
+  TDS:
+    col_idx: 34      #AH
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
+
+  Chloride concentration:
+    col_idx: 27      # AA
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
+
+##########################################################################################################################################################################
+# POLY TANK
+Poly Tank:
+  Flow Rate to/from Vessel:
+    col_idx: 7          #G
+    agg: sum
+    convert: null
+    stream: outlet
+
+  Operating Temperature:
+    col_idx: 10       #J
+    agg: avg
+    convert: null
+    stream: outlet
+
+  Operating Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Design Density:
+    col_idx: 15       #O
+    agg: avg
+    convert: multiply_1000
+    stream: outlet
+
+  Operating Slurry pH:
+    sheet: "Equipment & Stream List"
+    col_idx: 14         #N
+    per_equipment: true
+    fallback: true
+    fallback_rule:
+      col_idx: 37        # AK
+      stream_type: output
+      stream_index: 0
+
+  # Design Slurry pH:
+  #   sheet: "Equipment & Stream List"
+  #   col_idx: 14         #N
+  #   per_equipment: true
+  #   fallback: true
+  #   fallback_rule:
+  #     col_idx: 37        #AK
+  #     stream_type: output
+  #     stream_index: 0
+
+  TDS:
+    col_idx: 34      #AH
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
+
+  Chloride concentration:
+    col_idx: 27      # AA
+    agg: sum
+    convert: multiply_1000
+    stream: outlet
 
 ##########################################################################################################################################################################
 # AGITATOR
@@ -630,7 +806,6 @@ Clarifier:
     stream_type: input
     stream_index: 0
   
-
   Average Feed Rate - operating (assuming 90% utilization):
     col_idx: 7         # G
     stream_type: input
@@ -656,6 +831,11 @@ Clarifier:
     col_idx: 7         # G
     stream_type: output
     stream_index: 0
+
+  Flocculant Addition:
+    col_idx: 4        #D
+    stream_type: input
+    stream_index: 1
 
 
 #######################################################################################################################################################################
@@ -793,3 +973,58 @@ Silos:
     agg: sum
     convert: null
     stream: outlet
+
+
+#######################################################################################################################################################################
+
+Media Filter:
+  Fluid Temperature - operating:
+    col_idx: 10     # J
+    stream_type: output
+    stream_index: 0
+  
+  Fluid Temperature - design:
+    col_idx: 10     # J
+    stream_type: output
+    stream_index: 0
+
+  Chloride Content:
+    col_idx: 27     # AA
+    stream_type: output
+    stream_index: 0
+    convert: multiply_1000
+
+  Solution density:
+    col_idx: 15     # O
+    stream_type: output
+    stream_index: 0
+
+  Solids density:
+    col_idx: 16     # P
+    stream_type: output
+    stream_index: 0
+
+  Slurry Density:
+    col_idx: 15     # O
+    stream_type: output
+    stream_index: 0
+  
+  Solution pH:
+    sheet: "Equipment & Stream List"
+    col_idx: 14         #N
+    per_equipment: true
+    fallback: true
+    fallback_rule:
+      col_idx: 37        # AK
+      stream_type: output
+      stream_index: 0
+
+  TDS:
+    col_idx: 34     # AH
+    stream_type: output
+    stream_index: 0
+
+  Min/Average/Max Feed Rate:
+    col_idx: 7     # G
+    stream_type: output
+    stream_index: 0
