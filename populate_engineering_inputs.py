@@ -63,7 +63,7 @@ def populate_engineering_inputs(master_file, datasheets_file, verbose=False):
         max_col = ws_master.max_column
         current_category = None
 
-        for row_cells in ws_master.iter_rows(min_row=4, max_row=ws_master.max_row, min_col=1, max_col=2):
+        for row_cells in ws_master.iter_rows(min_row=5, max_row=ws_master.max_row, min_col=1, max_col=2):
             # Track current category (handles merged cells properly)
             if row_cells[0].value:
                 current_category = str(row_cells[0].value).strip()

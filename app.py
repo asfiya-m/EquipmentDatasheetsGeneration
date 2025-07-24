@@ -17,17 +17,53 @@ Updated: July 2025
 from io import BytesIO
 import pandas as pd
 import streamlit as st
+from openpyxl import load_workbook, Workbook
+import zipfile
 
 from automation_test1 import generate_master_datasheet
 from populate_equipment_names import populate_equipment_names
 from populate_parameters import populate_parameters
 from populate_engineering_inputs import populate_engineering_inputs
 
+# ------------------------
+# Function to split final master into separate Excel files
+# ------------------------
+def split_workbook_by_sheet(master_bytes_io):
+    """
+    Splits a populated master workbook into individual Excel files per sheet.
+    Returns a BytesIO stream containing a ZIP archive.
+    """
+    zip_buffer = BytesIO()
+    wb_full = load_workbook(master_bytes_io, data_only=True)
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for sheet_name in wb_full.sheetnames:
+            ws_source = wb_full[sheet_name]
+
+            wb_single = Workbook()
+            ws_new = wb_single.active
+            ws_new.title = sheet_name
+
+            for row in ws_source.iter_rows(values_only=True):
+                ws_new.append(row)
+
+            stream = BytesIO()
+            wb_single.save(stream)
+            stream.seek(0)
+
+            safe_name = sheet_name.replace("/", "_").replace("\\", "_")
+            zipf.writestr(f"{safe_name}.xlsx", stream.read())
+
+    zip_buffer.seek(0)
+    return zip_buffer
+
+# ------------------------
+# Streamlit App
+# ------------------------
+
 st.title("📄 Master Equipment Datasheet Automation Tool")
 
-# st.sidebar.markdown("### Options")
-# verbose = st.sidebar.checkbox("Verbose logging", False)
-verbose = False
+verbose = False  # Hidden toggle for debugging if needed
 
 st.markdown("""
 This tool helps you:
@@ -43,7 +79,7 @@ This tool helps you:
 st.header("Step 1: Generate Master Datasheet")
 st.markdown("""
 **What happens in this step?**
-- Extracts equipment-wise parameters from your datasheet file.
+- Extracts equipment-wise parameters from your datasheet file (Col I).
 - Groups them under 5 categories:
     - SysCAD Inputs
     - Engineering Inputs
@@ -55,22 +91,13 @@ st.markdown("""
 
 uploaded_raw = st.file_uploader("Upload your raw equipment .xlsm file", type=["xlsm"])
 if uploaded_raw and st.button("Generate Master Sheet"):
-    # Read raw uploaded datasheet ONCE and store bytes
     raw_bytes = uploaded_raw.read()
-
-    # Use the bytes to generate the master sheet
     output_stream, output_filename = generate_master_datasheet(BytesIO(raw_bytes))
     output_stream.seek(0)
 
-    # Store outputs in session state
     st.session_state["generated_master"] = output_stream
     st.session_state["raw_datasheets_workbook"] = raw_bytes
 
-    # output_stream, output_filename = generate_master_datasheet(BytesIO(uploaded_raw.read()))
-    # output_stream.seek(0)
-    # st.session_state["generated_master"] = output_stream
-
-    # Provide download
     st.success("✅ Master datasheet has been successfully generated!")
     st.download_button(
         label="📥 Download Master Sheet",
@@ -86,15 +113,8 @@ st.header("Step 2: Populate Equipment Names")
 st.markdown("""
 **What happens in this step?**
 - Reads equipment names from the SysCAD report - Detailed Streamtable, Equipment & Stream List sheet.
-- Maps equipment codes explicitly:
-    - `TK` → Tank
-    - `FP_PK` → Filter Press
-    - `IX_PK` → Ion Exchange
-    - `RO_PK` → Reverse Osmosis System
+- Maps equipment codes explicitly.
 - Automatically generates implied equipment where applicable.
-- Writes equipment names into the first available column starting at **D3**.
-- Counts the number of units in each sheet and writes it in *B2*.
-- Logs skipped equipment if no mapping sheet is found.
 """)
 
 use_generated_step2 = False
@@ -118,7 +138,6 @@ uploaded_stream_step2 = st.file_uploader("Upload the detailed streamtable", type
 
 if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipment Names"):
     stream_bytes_step2 = BytesIO(uploaded_stream_step2.read())
-
     result_step2, filename_step2, skipped_step2 = populate_equipment_names(
         master_bytes_step2, stream_bytes_step2, verbose=verbose
     )
@@ -157,7 +176,6 @@ st.markdown("""
 - Reads equipment & stream tags from your detailed streamtable.
 - Looks up stream data in **Stream Table V**.
 - Maps & writes parameters into the master datasheet under **SysCAD Inputs** section.
-- Applies rules: sum, average, unit conversion as specified.
 """)
 
 use_generated_step3 = False
@@ -208,15 +226,15 @@ if master_bytes and stream_bytes and st.button("Populate Parameters"):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# ------------------------
-# Step 4: Populate Engineering Inputs
-# ------------------------
-st.header("Step 4: Populate Engineering Inputs")
+# ---------------------------------------------------------
+# Step 4: Populate Engineering Inputs and Project Constants
+# ---------------------------------------------------------
+st.header("Step 4: Populate Engineering Inputs and Project Constants")
 st.markdown("""
 **What happens in this step?**
-- Reads the parameters under **Engineering Inputs** in the master sheet.
-- Fetches the corresponding values from your datasheets workbook (col K).
-- Writes the values to all units in the master sheet.
+- Reads the parameters under **Engineering Inputs**  and **Project Constants** in the master sheet.
+- Fetches values from the datasheets workbook (col K).
+- Populates them for each unit in the master sheet.
 """)
 
 use_generated_step4 = False
@@ -236,7 +254,6 @@ else:
     else:
         master_bytes_step4 = None
 
-# uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
 use_existing_datasheet = False
 if "raw_datasheets_workbook" in st.session_state:
     use_existing_datasheet = st.radio(
@@ -251,9 +268,6 @@ else:
     uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
     datasheet_bytes = BytesIO(uploaded_datasheet.read()) if uploaded_datasheet else None
 
-# if master_bytes_step4 and uploaded_datasheet and st.button("Populate Engineering Inputs"):
-#     datasheet_bytes = BytesIO(uploaded_datasheet.read())
-
 if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering Inputs"):
     result_step4, filename_step4, skipped_step4 = populate_engineering_inputs(
         master_bytes_step4, datasheet_bytes, verbose=verbose
@@ -264,6 +278,8 @@ if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering In
         st.text_area("Skipped Parameters", "\n".join(skipped_step4), height=200)
 
     st.success("✅ Engineering Inputs populated successfully.")
+    st.session_state["master_with_engineering_inputs"] = result_step4
+
 
     st.download_button(
         label="📥 Download Master Sheet with Engineering Inputs",
@@ -271,3 +287,38 @@ if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering In
         file_name=filename_step4,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+# ------------------------
+# Step 4.5: Split Master into Separate Equipment Files
+# ------------------------
+st.header("Step 4.5: Export Individual Equipment Files")
+st.markdown("""
+**What happens in this step?**
+- Takes the populated master sheet (from Step 4).
+- Creates one Excel file per equipment sheet.
+- Bundles all files into a ZIP archive for download.
+""")
+
+if "master_with_engineering_inputs" in st.session_state:
+    zip_file = split_workbook_by_sheet(BytesIO(
+        st.session_state["master_with_engineering_inputs"].getvalue()
+    ))
+
+    st.download_button(
+        label="📥 Download Equipment Sheets (ZIP)",
+        data=zip_file,
+        file_name="PopulatedSheets_SplitByEquipment.zip",
+        mime="application/zip"
+    )
+else:
+    st.info("Complete Step 4 first to enable export of split files.")
+
+    # if "master_with_engineering_inputs" in st.session_state:
+    #     zip_file = split_workbook_by_sheet(BytesIO(st.session_state["master_with_engineering_inputs"].getvalue()))
+    #     st.download_button(
+    #         label="📥 Download Equipment Sheets (ZIP)",
+    #         data=zip_file,
+    #         file_name="PopulatedSheets_SplitByEquipment.zip",
+    #         mime="application/zip"
+    # )
+
