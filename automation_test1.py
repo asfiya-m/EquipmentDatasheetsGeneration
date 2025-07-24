@@ -55,11 +55,19 @@ def generate_master_datasheet(uploaded_file):
         "Vendor Input": "Vendor Inputs"
     }
 
+    # ordered_categories = [
+    #     "SysCAD Inputs",
+    #     "Engineering Inputs",
+    #     "Lab/Pilot Inputs",
+    #     "Project Constant",
+    #     "Vendor Inputs"
+    # ]
+
     ordered_categories = [
-        "SysCAD Inputs",
-        "Engineering Inputs",
-        "Lab/Pilot Inputs",
         "Project Constant",
+        "SysCAD Inputs",
+        "Lab/Pilot Inputs",
+        "Engineering Inputs",
         "Vendor Inputs"
     ]
 

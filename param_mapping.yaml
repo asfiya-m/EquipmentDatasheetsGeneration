@@ -1,5 +1,5 @@
-#TANK
-Tank:
+#AGITATED TANK
+Agitated Tanks:
   Flow Rate to/from Vessel:
     col_idx: 7          #G
     agg: sum

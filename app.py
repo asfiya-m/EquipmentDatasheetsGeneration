@@ -25,8 +25,9 @@ from populate_engineering_inputs import populate_engineering_inputs
 
 st.title("📄 Master Equipment Datasheet Automation Tool")
 
-st.sidebar.markdown("### Options")
-verbose = st.sidebar.checkbox("Verbose logging", False)
+# st.sidebar.markdown("### Options")
+# verbose = st.sidebar.checkbox("Verbose logging", False)
+verbose = False
 
 st.markdown("""
 This tool helps you:
@@ -54,10 +55,22 @@ st.markdown("""
 
 uploaded_raw = st.file_uploader("Upload your raw equipment .xlsm file", type=["xlsm"])
 if uploaded_raw and st.button("Generate Master Sheet"):
-    output_stream, output_filename = generate_master_datasheet(BytesIO(uploaded_raw.read()))
-    output_stream.seek(0)
-    st.session_state["generated_master"] = output_stream
+    # Read raw uploaded datasheet ONCE and store bytes
+    raw_bytes = uploaded_raw.read()
 
+    # Use the bytes to generate the master sheet
+    output_stream, output_filename = generate_master_datasheet(BytesIO(raw_bytes))
+    output_stream.seek(0)
+
+    # Store outputs in session state
+    st.session_state["generated_master"] = output_stream
+    st.session_state["raw_datasheets_workbook"] = raw_bytes
+
+    # output_stream, output_filename = generate_master_datasheet(BytesIO(uploaded_raw.read()))
+    # output_stream.seek(0)
+    # st.session_state["generated_master"] = output_stream
+
+    # Provide download
     st.success("✅ Master datasheet has been successfully generated!")
     st.download_button(
         label="📥 Download Master Sheet",
@@ -223,13 +236,25 @@ else:
     else:
         master_bytes_step4 = None
 
-# uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xlsx"], key="datasheets")
-uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
+# uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
+use_existing_datasheet = False
+if "raw_datasheets_workbook" in st.session_state:
+    use_existing_datasheet = st.radio(
+        "Choose datasheets workbook:",
+        ["Use the one uploaded in Step 1", "Upload a different datasheet workbook"],
+        key="step4_datasheet_radio"
+    ) == "Use the one uploaded in Step 1"
 
+if use_existing_datasheet:
+    datasheet_bytes = BytesIO(st.session_state["raw_datasheets_workbook"])
+else:
+    uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
+    datasheet_bytes = BytesIO(uploaded_datasheet.read()) if uploaded_datasheet else None
 
-if master_bytes_step4 and uploaded_datasheet and st.button("Populate Engineering Inputs"):
-    datasheet_bytes = BytesIO(uploaded_datasheet.read())
+# if master_bytes_step4 and uploaded_datasheet and st.button("Populate Engineering Inputs"):
+#     datasheet_bytes = BytesIO(uploaded_datasheet.read())
 
+if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering Inputs"):
     result_step4, filename_step4, skipped_step4 = populate_engineering_inputs(
         master_bytes_step4, datasheet_bytes, verbose=verbose
     )

@@ -1,6 +1,11 @@
 """
 populate_equipment_names.py
 This script automates the population of equipment names in the Master Equipment datasheet file.
+Populates equipment names into the Master Equipment datasheet, with support for:
+- Explicit equipment mapping
+- Implied Agitated Tanks from selected BP/PF/P units
+- Implied Agitators for TK and Agitated Tanks
+
 Created on Wed July 16
 @author: AsfiyaKhanam
 """
@@ -35,7 +40,6 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
     # explicit mapping
     equipment_sheet_map = {
         "TK": "Tank",
-        # "BP_TK": "Agitated Tanks",
         "BP_TK": "Bolted Panel Tank",
         "PF_TK": "PreFab Tank",
         "P_TK": "Poly Tank",
@@ -45,20 +49,28 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
         "S": "Clarifier",
         "E": "Heat Exchanger-1",
         "SL": "Silos",
-        "F" : "Media Filter"
-
+        "F": "Media Filter"
     }
 
-    # implied mapping: for each TK → also create A in Agitator sheet
-    implied_equipment = {
-        "TK": [("A", "Agitator")]
+    # Agitated Tanks: only for specific units
+    agitated_tank_units = {
+        "P_TK-0102_Oxidation_Filter_Feed_Tank",
+        "P_TK-0201_StripSolutionFeedTank",
+        "P_TK-0204_DLEProductTank",
+        "P_TK-0302_Barite_Filter_Feed_Tank",
+        "P_TK-0305_Lime_Filter_Feed_Tank",
+        "P_TK-0308_Carbonate_Filter_Feed_Tank",
+        "PF_TK-0202_DLEFeedTank",
+        "PF_TK-0203_DLE_Depleted_Brine_Tank",
+        "PF_TK-0304_LimePptReactor",
+        "PF_TK-0307_CarbonatePurificationReactor",
+        "PF_TK-0301_BaritePptReactor",
+        "BP_TK-0806_Wastewater_Treatment_Tank",
     }
 
-    #keep track of counts per sheet
     sheet_unit_counts = defaultdict(int)
-
-     # read equipment names from streamtable
     equipment_names = []
+
     for row in ws_streamlist.iter_rows(min_row=4, min_col=1, max_col=1):
         cell_value = str(row[0].value).strip()
         if cell_value:
@@ -66,7 +78,7 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
 
     for equip_name in equipment_names:
         # 🚫 Skip if no numeric part
-        match = re.search(r"-.*?(\d+)",equip_name)
+        match = re.search(r"-.*?(\d+)", equip_name)
         if not match:
             if verbose:
                 print(f"⚠️ Skipping {equip_name}: no numeric part in name")
@@ -74,66 +86,69 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
             continue
 
         matched = False
+        equip_prefix = equip_name.split('-', 1)[0]
+
         for code, sheet_name in equipment_sheet_map.items():
-            equip_prefix = equip_name.split('-',1)[0]
             if equip_prefix == code:
-            # if equip_name.startswith(code):
                 if sheet_name in wb_master.sheetnames:
                     ws = wb_master[sheet_name]
-
-                    # find first available column starting from D3
-                    col_idx = 4  # D
+                    col_idx = 4
                     while ws.cell(row=3, column=col_idx).value:
                         col_idx += 1
-
                     ws.cell(row=3, column=col_idx).value = equip_name
                     sheet_unit_counts[sheet_name] += 1
-
+                    matched = True
                     if verbose:
                         print(f"✅ Wrote {equip_name} → Sheet: {sheet_name} → Column: {col_idx}")
-                    matched = True
-
-                    # handle implied equipment if any
-                    if code in implied_equipment:
-                        number = equip_name.split("-")[1]
-                        for implied_code, implied_sheet in implied_equipment[code]:
-                            implied_name = f"{implied_code}-{number}"
-                            if implied_sheet in wb_master.sheetnames:
-                                ws_implied = wb_master[implied_sheet]
-                                implied_col = 4
-                                while ws_implied.cell(row=3, column=implied_col).value:
-                                    implied_col += 1
-                                ws_implied.cell(row=3, column=implied_col).value = implied_name
-                                sheet_unit_counts[implied_sheet] += 1
-
-                                if verbose:
-                                    print(f"✨ Implied: Wrote {implied_name} → Sheet: {implied_sheet} → Column: {implied_col}")
-                            else:
-                                skipped.append(f"{implied_name}: sheet '{implied_sheet}' not found")
-                                if verbose:
-                                    print(f"⚠️ {implied_name}: sheet '{implied_sheet}' not found")
-
-                    break
                 else:
                     skipped.append(f"{equip_name}: sheet '{sheet_name}' not found")
-                    if verbose:
-                        print(f"⚠️ {equip_name}: sheet '{sheet_name}' not found")
                     matched = True
-                    break
+                break
+
+        # ➕ Special case: add to Agitated Tanks if in list
+        if equip_name in agitated_tank_units:
+            sheet_name = "Agitated Tanks"
+            if sheet_name in wb_master.sheetnames:
+                ws = wb_master[sheet_name]
+                col_idx = 4
+                while ws.cell(row=3, column=col_idx).value:
+                    col_idx += 1
+                ws.cell(row=3, column=col_idx).value = equip_name
+                sheet_unit_counts[sheet_name] += 1
+                if verbose:
+                    print(f"💧 Agitated: Wrote {equip_name} → Agitated Tanks → Column: {col_idx}")
+            else:
+                skipped.append(f"{equip_name}: Agitated Tanks sheet not found")
+
+            # ➕ Implied Agitator
+            if "-" in equip_name:
+                suffix = equip_name.split("-", 1)[1]
+                agitator_tag = f"A-{suffix}"
+                agitator_sheet = "Agitator"
+                if agitator_sheet in wb_master.sheetnames:
+                    ws_ag = wb_master[agitator_sheet]
+                    col_idx = 4
+                    while ws_ag.cell(row=3, column=col_idx).value:
+                        col_idx += 1
+                    ws_ag.cell(row=3, column=col_idx).value = agitator_tag
+                    sheet_unit_counts[agitator_sheet] += 1
+                    if verbose:
+                        print(f"✨ Implied: Wrote {agitator_tag} → Agitator → Column: {col_idx}")
+                else:
+                    skipped.append(f"{agitator_tag}: Agitator sheet not found")
 
         if not matched:
             skipped.append(f"{equip_name}: no mapping for code")
             if verbose:
                 print(f"⚠️ {equip_name}: no mapping for code")
 
-    # write counts into B2 of each sheet
+    # Write unit counts in B2
     for sheet_name, count in sheet_unit_counts.items():
         ws = wb_master[sheet_name]
-        ws.cell(row=2, column=2).value = count  # B2
+        ws.cell(row=2, column=2).value = count
         if verbose:
             print(f"🔷 Sheet '{sheet_name}': unit count = {count} (written to B2)")
 
-    # save output
     output = BytesIO()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
     filename = f"Master_DataSheet_EquipmentPopulated_{timestamp}.xlsx"
@@ -141,3 +156,4 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
     output.seek(0)
 
     return output, filename, skipped
+
