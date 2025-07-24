@@ -29,6 +29,8 @@ def apply_conversion(value, convert_key):
         return value * 100
     elif convert_key == "divide_1000":
         return value / 1000
+    elif convert_key == "multiply_16.67":
+        return value * 16.67
     elif convert_key is None:
         return value
     else:
