@@ -76,7 +76,7 @@ def generate_master_datasheet(uploaded_file):
     # Column indices are 0-based
     sheet_column_map = {
         "default": {"param": 2, "unit": 4, "category": 8},       # C, E, I
-        "Heat Exchanger-1": {"param": 1, "unit": 11, "category": 25}  # B, L, Z
+        "Heat Exchanger-1": {"param": 2, "unit": 11, "category": 25}  # C, L, Z
     }
 
     thin_border = Border(

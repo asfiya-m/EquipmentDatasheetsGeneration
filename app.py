@@ -169,7 +169,7 @@ if master_bytes_step2 and uploaded_stream_step2 and st.button("Populate Equipmen
 # ------------------------
 # Step 3: Populate Parameters
 # ------------------------
-st.header("Step 3: Populate Parameters")
+st.header("Step 3: Populate SysCAD Parameters")
 st.markdown("""
 **What happens in this step?**
 - Uses the populated master sheet (with equipment names from Step 2).
@@ -200,7 +200,7 @@ if "uploaded_stream_content" in st.session_state:
 else:
     stream_bytes = None
 
-if master_bytes and stream_bytes and st.button("Populate Parameters"):
+if master_bytes and stream_bytes and st.button("Populate SysCAD Parameters"):
     result, filename, skipped = populate_parameters(master_bytes, stream_bytes, verbose=verbose)
 
     if skipped:
@@ -216,7 +216,7 @@ if master_bytes and stream_bytes and st.button("Populate Parameters"):
             mime="text/csv"
         )
 
-    st.success("✅ Parameters populated successfully into master sheet.")
+    st.success("✅SysCAD Parameters populated successfully into master sheet.")
     st.session_state["master_with_parameters"] = result
 
     st.download_button(
@@ -268,7 +268,7 @@ else:
     uploaded_datasheet = st.file_uploader("Upload the datasheets workbook", type=["xls", "xlsx", "xlsm"], key="datasheets")
     datasheet_bytes = BytesIO(uploaded_datasheet.read()) if uploaded_datasheet else None
 
-if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering Inputs"):
+if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering Inputs and Project Constants"):
     result_step4, filename_step4, skipped_step4 = populate_engineering_inputs(
         master_bytes_step4, datasheet_bytes, verbose=verbose
     )
@@ -277,12 +277,12 @@ if master_bytes_step4 and datasheet_bytes and st.button("Populate Engineering In
         st.warning("⚠️ Some parameters could not be matched:")
         st.text_area("Skipped Parameters", "\n".join(skipped_step4), height=200)
 
-    st.success("✅ Engineering Inputs populated successfully.")
+    st.success("✅ Engineering Inputs and Project Constants populated successfully.")
     st.session_state["master_with_engineering_inputs"] = result_step4
 
 
     st.download_button(
-        label="📥 Download Master Sheet with Engineering Inputs",
+        label="📥 Download Master Sheet with Engineering Inputs and Project Inputs",
         data=result_step4,
         file_name=filename_step4,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -305,7 +305,7 @@ if "master_with_engineering_inputs" in st.session_state:
     ))
 
     st.download_button(
-        label="📥 Download Equipment Sheets (ZIP)",
+        label="📥 Download Populated Equipment Sheets (ZIP)",
         data=zip_file,
         file_name="PopulatedSheets_SplitByEquipment.zip",
         mime="application/zip"

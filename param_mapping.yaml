@@ -273,8 +273,8 @@ Agitator:
 #############################################################################################################################################################################
 # FILTER PRESS
 Filter Press:
-  Cake Blow Required- Air Requirement:
-    text: N
+  # Cake Blow Required- Air Requirement:
+  #   text: N
 
   Cake Wash Required- With What?- What Flow Rate?:
     text: N
@@ -314,10 +314,10 @@ Filter Press:
     stream_type: output
     stream_index: 1
 
-  Cake Moisture:
-    col_idx: 18     #R
-    stream_type: output
-    stream_index: 1
+  # Cake Moisture:
+  #   col_idx: 18     #R
+  #   stream_type: output
+  #   stream_index: 1
 
   Wet Cake Bulk Density:
     col_idx: 15         #O
@@ -833,9 +833,10 @@ Clarifier:
     stream_index: 0
 
   Flocculant Addition:
-    col_idx: 4        #D
+    col_idx: 7        #D
     stream_type: input
     stream_index: 1
+    convert: multiply_16.67
 
 
 #######################################################################################################################################################################
