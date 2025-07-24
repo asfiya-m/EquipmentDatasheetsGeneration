@@ -9,80 +9,74 @@ It is designed as an internal Streamlit web app to make equipment documentation 
 ✅ Populates **parameter values** into the master sheet by reading from `Stream Table V`, applying aggregation rules & unit conversions.  
 ✅ Uses an external YAML configuration file (`param_mapping.yaml`) for easy, flexible mapping of parameters → no hardcoding!
 
-## 📝 Features
-- Generate a ready-to-use, properly formatted Master Equipment Datasheet with grouped categories:
+## 🧠 Key Features
+
+- 📁 Categorized parameter sections:
   - SysCAD Inputs
   - Engineering Inputs
   - Lab/Pilot Inputs
   - Project Constants
   - Vendor Inputs
 
-- Match and insert equipment names into the correct sheets & columns, counting the number of units.
-- Populate parameter values like Flow, Temperature, Density, Pressure, etc., with rules:
-  - sum / average
-  - unit conversions (×1000, ÷1000, etc.)
-- YAML-driven parameter mapping — easy to update & maintain.
-- Optional `verbose` mode (backend-only) for detailed debugging.
+- 🧩 Rule-based parameter population:
+  - Sum, average, or fixed values
+  - Stream direction (input/output)
+  - Stream overrides or fallbacks
+  - Unit conversions (×1000, ÷100, etc.)
 
-## 🚀 Workflow Steps
+- ⚙️ YAML-driven configuration (`param_mapping.yaml`)
+  - Per-equipment mappings
+  - Column index, stream handling, conversion logic
+  - Overrides for specific units
 
-### 📄 Step 1: Generate Master Datasheet
-- Upload a `.xlsm` workbook with equipment sheets.
-- App extracts parameters from each equipment sheet.
-- Groups parameters under standard categories.
-- Outputs one clean Excel file:  
+- 💡 Additional Features:
+  - Equipment code mapping (e.g., `TK` → Tank)
+  - Implied equipment generation (e.g., Agitators from Tanks)
+  - Auto-counting number of units
+  - ZIP export of individual equipment sheets (Step 4.5)
+  - Optional verbose mode (backend only)
+
+## App Workflow
+
+### Step 1: Generate Master Datasheet
+- Upload `.xlsm` file with multiple equipment sheets.
+- App extracts parameters from each sheet.
+- Categorizes and formats the content.
+- Creates a multi-sheet Excel file:  
   `Master_DataSheet_<timestamp>.xlsx`
 
-### 🔷 Step 2: Populate Equipment Names
-- Reads equipment tags from `Equipment & Stream List` (in your SysCAD detailed streamtable).
-- Explicit mapping of codes:
-    TK → Tank
-    A → Agitator (implied for each Tank)
-    FP_PK → Filter Press
-    IX_PK → Ion Exchange
-    RO_PK → Reverse Osmosis System
-- Fills equipment names in master sheet starting at `D3`.
-- Adds **number of units** at `B2`.
-- Logs skipped equipment (if no matching sheet found).
+### Step 2: Populate Equipment Names
+- Reads from `Equipment & Stream List` tab of SysCAD streamtable.
+- Applies mapping logic to identify real and implied units.
+- Writes equipment names in `D3` onward.
+- Fills number of units at cell `B2`.
 
-### 📈 Step 3: Populate Parameters
-- Reads the master sheet (with equipment names) + the SysCAD streamtable.
-- Uses `param_mapping.yaml` for defining:
-- which parameters to populate
-- which streams to use (input/output)
-- which column in `Stream Table V` to read from
-- how to aggregate & convert
-- Supports:
-- **Tank**
-- **Agitator**
-- **Filter Press**
-- (`Ion Exchange` placeholder ready)
-- Writes values directly into the master sheet.
-- Logs skipped parameters & streams with clear messages when `verbose=True`.
+### Step 3: Populate Parameters
+- Uses `Stream Table V` and YAML config to:
+  - Resolve stream tags per unit
+  - Apply column-specific value extraction
+  - Apply rules for text, lookup, or numeric processing
+- Handles override rules for specific units
+- Logs skipped parameters if not found or invalid
 
-## 🧾 Configuration
+### Step 4: Populate Engineering Inputs
+- Uses column K of original datasheet workbook
+- Pulls values for **Engineering Inputs** only
+- Applies to all matching units
+- Handles missing parameters gracefully
 
-### 🔷 `param_mapping.yaml`
-Defines all parameter mappings for each equipment type.
-    Example:
-    Tank:
-    Operating Density:
-      col_idx: 15
-      agg: avg
-      convert: multiply_100
-      stream: outlet
-You can easily extend it with more parameters or equipment by editing the YAML.
+### Step 4.5: Export Individual Equipment Sheets
+- Splits the final populated master workbook into **one file per sheet**
+- Bundles them into a downloadable `.zip`
+- Each file named after the sheet/equipment
+- Available only after Step 4 is completed
 
-#### Debugging
-✅ Run populate_parameters.py or populate_equipment_names.py with verbose=True for detailed logs:
-  Logs include:
-    -which sheet & equipment matched
-    -which streams were used
-    -which parameter values were found & written
-    -skipped items with clear reasons
 
-##### 📋 Potential Future Improvements
-    - Defensive checks for malformed equipment names.
-    - Automatic detection of YAML inconsistencies & validation.
-    - Build UI toggle for verbose mode.
-    - Add YAML mappings for Ion Exchange & Reverse Osmosis System.
+### Developer Notes
+- All processing is driven from a Streamlit app (app.py)
+- Data is streamed between steps using st.session_state
+- All file uploads are preserved between steps to minimize repetition
+- Verbose mode is available internally (set verbose = True in code)
+
+### Future Improvements
+- Custom naming for split files in Step 4.5

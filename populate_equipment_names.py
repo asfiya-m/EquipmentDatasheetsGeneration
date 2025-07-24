@@ -39,7 +39,7 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
 
     # explicit mapping
     equipment_sheet_map = {
-        "TK": "Tank",
+        "TK": "DLE Tank",
         "BP_TK": "Bolted Panel Tank",
         "PF_TK": "PreFab Tank",
         "P_TK": "Poly Tank",
@@ -95,7 +95,17 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
                     col_idx = 4
                     while ws.cell(row=3, column=col_idx).value:
                         col_idx += 1
+
+                    # ws.insert_rows(4)
+
+                    # Full SysCAD name
                     ws.cell(row=3, column=col_idx).value = equip_name
+
+                    # Simplified PFD name in Row 4
+                    parts = str(equip_name).split("_")
+                    short_name = next((p for p in parts if "-" in p and any(c.isdigit() for c in p)), equip_name)
+                    ws.cell(row=4, column=col_idx).value = short_name
+
                     sheet_unit_counts[sheet_name] += 1
                     matched = True
                     if verbose:
@@ -113,7 +123,15 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
                 col_idx = 4
                 while ws.cell(row=3, column=col_idx).value:
                     col_idx += 1
+
+                #  SysCAD name in the sheet
                 ws.cell(row=3, column=col_idx).value = equip_name
+
+                #  Short name in row 4
+                parts = str(equip_name).split("_")
+                short_name = next((p for p in parts if "-" in p and any(c.isdigit() for c in p)), equip_name)
+                ws.cell(row=4, column=col_idx).value = short_name
+
                 sheet_unit_counts[sheet_name] += 1
                 if verbose:
                     print(f"💧 Agitated: Wrote {equip_name} → Agitated Tanks → Column: {col_idx}")
@@ -130,7 +148,13 @@ def populate_equipment_names(master_file, streamtable_file, verbose=True):
                     col_idx = 4
                     while ws_ag.cell(row=3, column=col_idx).value:
                         col_idx += 1
+
+                    #  SysCAD names
                     ws_ag.cell(row=3, column=col_idx).value = agitator_tag
+                    #  short names
+                    short_ag_name = agitator_tag.split("_")[0]
+                    ws_ag.cell(row=4, column=col_idx).value = short_ag_name
+
                     sheet_unit_counts[agitator_sheet] += 1
                     if verbose:
                         print(f"✨ Implied: Wrote {agitator_tag} → Agitator → Column: {col_idx}")

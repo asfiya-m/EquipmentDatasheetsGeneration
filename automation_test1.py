@@ -29,6 +29,7 @@ from io import BytesIO
 from datetime import datetime
 from collections import defaultdict
 import warnings
+# import re
 
 def generate_master_datasheet(uploaded_file):
     """
@@ -127,13 +128,16 @@ def generate_master_datasheet(uploaded_file):
         ws.append([sheet_name])
         ws.append(["Number of units ="])
         header_row = ["Parameter Category", "Input Parameters", "Units"]
-        ws.append(header_row)
+        ws.append(header_row)           # for row 3:headers
+        ws.insert_rows(4)           # line to add simplified standard names
 
-        for cell in ws[3]:
+        ws.append(header_row)           # for row 4
+
+        for cell in ws[3] + ws[4]:
             if cell.value:
                 cell.font = Font(bold=True)
-
-        current_row = 4
+        
+        current_row = 5
         column_widths = defaultdict(int)
         for col_idx, value in enumerate(header_row, start=1):
             column_widths[col_idx] = max(column_widths[col_idx], len(str(value)))

@@ -113,7 +113,7 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
             if verbose:
                 print(f"\n✅ Equipment: {equip_name} → Sheet: {sheet_name} → Column: {equip_col}")
 
-            for row_cells in ws.iter_rows(min_row=4, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+            for row_cells in ws.iter_rows(min_row=5, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
                 param_name = str(row_cells[1].value).strip() if row_cells[1].value else ""
                 param_lc = param_name.lower()
 
