@@ -84,12 +84,27 @@ def populate_parameters(master_file, streamtable_file, verbose=False):
             equip_col = cell.column
 
             streams_key = equip_name
+
             if sheet_name == "Agitator":
                 if "-" not in equip_name:
                     skipped.append(f"[SKIP] {equip_name}: invalid format for implied equipment")
                     continue
+
                 suffix = equip_name.split("-", 1)[1]
-                streams_key = f"TK-{suffix}"
+                found_parent = None
+
+                for prefix in ["TK","BP_TK","PF_TK","P_TK"]:
+                    possible_key = f"{prefix}-{suffix}"
+                    if possible_key in equip_stream_map:
+                        found_parent = possible_key
+                        break
+
+                if found_parent:
+                    streams_key = found_parent
+                else:
+                    skipped.append(f"[SKIP] {equip_name}: no parent equipment found for suffix '{suffix}'")
+                    continue
+
 
             if streams_key not in equip_stream_map:
                 skipped.append(f"[SKIP] {equip_name}: no streams found for base '{streams_key}'")
